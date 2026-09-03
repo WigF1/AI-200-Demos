@@ -58,8 +58,12 @@ else
   az webapp deployment slot create --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
     --slot "$STAGING_SLOT_NAME"
 fi
+# --slot-settings both sets the value AND marks it as sticky (slot-specific)
+# in one flag - it needs key=value format, same as --settings, not a bare
+# key name. Using both --settings and --slot-settings for the same key
+# here was redundant as well as wrong-format.
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
-  --slot "$STAGING_SLOT_NAME" --settings APP_ENVIRONMENT="staging" --slot-settings APP_ENVIRONMENT
+  --slot "$STAGING_SLOT_NAME" --slot-settings APP_ENVIRONMENT="staging"
 
 az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 
