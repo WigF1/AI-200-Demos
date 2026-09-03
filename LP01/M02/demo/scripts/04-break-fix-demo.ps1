@@ -12,6 +12,11 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+Write-Host "NOTE: avoid running other scripts against this app (e.g. 03-verify-troubleshoot.ps1)"
+Write-Host "while this is running. Any config change triggers its own automatic restart, and a"
+Write-Host "concurrent restart can race this one and produce misleading results."
+Write-Host ""
+
 $HostName = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostName -o tsv
 $HealthUrl = "https://$HostName/health"
 
@@ -23,6 +28,20 @@ Write-Host "== Break it: point WEBSITES_PORT at a port the container isn't liste
 az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppName `
   --settings WEBSITES_PORT=9999 --output none
 az webapp restart --resource-group $ResourceGroup --name $WebAppName
+
+# Self-check: confirm the setting actually stuck before trusting the health
+# poll below. If something else (another script, a concurrent restart)
+# raced this and the live value isn't 9999, the "still healthy" result
+# that follows would otherwise look like a mystery instead of explaining
+# itself.
+$LivePort = az webapp config appsettings list --resource-group $ResourceGroup --name $WebAppName `
+  --query "[?name=='WEBSITES_PORT'].value | [0]" --output tsv
+if ($LivePort -ne "9999") {
+    Write-Warning "WEBSITES_PORT currently reads '$LivePort', not 9999 - something else changed it"
+    Write-Warning "(likely a concurrent restart from another script). The 'confirm broken' check"
+    Write-Warning "below is not trustworthy this run - stop, make sure no other script is touching"
+    Write-Warning "this app, and re-run."
+}
 
 Write-Host "== Confirm it's actually broken =="
 # App Service serves its own HTTP 200 placeholder page while a container

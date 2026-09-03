@@ -12,6 +12,11 @@ if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --o
   exit 1
 fi
 
+echo "NOTE: avoid running other scripts against this app (e.g. 03-verify-troubleshoot.sh)"
+echo "while this is running. Any config change triggers its own automatic restart, and a"
+echo "concurrent restart can race this one and produce misleading results."
+echo
+
 HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query defaultHostName -o tsv)
 HEALTH_URL="https://${HOSTNAME}/health"
 
@@ -23,6 +28,20 @@ echo "== Break it: point WEBSITES_PORT at a port the container isn't listening o
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --settings WEBSITES_PORT=9999 --output none
 az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+
+# Self-check: confirm the setting actually stuck before trusting the health
+# poll below. If something else (another script, a concurrent restart)
+# raced this and the live value isn't 9999, the "still healthy" result
+# that follows would otherwise look like a mystery instead of explaining
+# itself.
+LIVE_PORT=$(az webapp config appsettings list --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
+  --query "[?name=='WEBSITES_PORT'].value | [0]" --output tsv)
+if [ "$LIVE_PORT" != "9999" ]; then
+  echo "WARNING: WEBSITES_PORT currently reads '$LIVE_PORT', not 9999 - something else changed" >&2
+  echo "it (likely a concurrent restart from another script). The 'confirm broken' check" >&2
+  echo "below is not trustworthy this run - stop, make sure no other script is touching" >&2
+  echo "this app, and re-run." >&2
+fi
 
 echo "== Confirm it's actually broken =="
 # App Service serves its own HTTP 200 placeholder page while a container
