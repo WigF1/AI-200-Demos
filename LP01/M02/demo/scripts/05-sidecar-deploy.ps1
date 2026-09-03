@@ -11,7 +11,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
-az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers
+az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Host "  (already in sitecontainers mode, or nothing to convert)" }
 
 Write-Host "== Write a spec file for a small sample sidecar image =="
 $specPath = "$env:TEMP\sidecar-spec.json"
@@ -30,6 +31,18 @@ $spec = @'
 ]
 '@
 Set-Content -Path $specPath -Value $spec
+
+# az webapp sitecontainers create isn't idempotent either - it has a
+# separate 'update' command for a reason. Simplest re-run-safe approach:
+# delete the sidecar first if it's already there, then create fresh from
+# the spec file.
+az webapp sitecontainers show --name $WebAppName --resource-group $ResourceGroup `
+  --container-name log-forwarder --output none 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Sidecar 'log-forwarder' already exists - removing so it can be recreated cleanly from the spec file."
+    az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
+      --container-name log-forwarder --output none
+}
 
 Write-Host "== Add the sidecar alongside the existing main container =="
 az webapp sitecontainers create --name $WebAppName --resource-group $ResourceGroup `

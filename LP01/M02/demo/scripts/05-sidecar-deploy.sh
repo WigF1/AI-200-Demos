@@ -19,7 +19,7 @@ echo "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 az webapp sitecontainers convert \
   --name "$WEBAPP_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --mode sitecontainers
+  --mode sitecontainers 2>/dev/null || echo "  (already in sitecontainers mode, or nothing to convert)"
 
 echo "== Write a spec file for a small public 'sidecar' image (busybox log-tailer stand-in) =="
 cat > /tmp/sidecar-spec.json <<JSON
@@ -36,6 +36,17 @@ cat > /tmp/sidecar-spec.json <<JSON
   }
 ]
 JSON
+
+# az webapp sitecontainers create isn't idempotent either - it has a
+# separate 'update' command for a reason. Simplest re-run-safe approach:
+# delete the sidecar first if it's already there, then create fresh from
+# the spec file.
+if az webapp sitecontainers show --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+     --container-name log-forwarder --output none 2>/dev/null; then
+  echo "Sidecar 'log-forwarder' already exists - removing so it can be recreated cleanly from the spec file."
+  az webapp sitecontainers delete --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+    --container-name log-forwarder --output none
+fi
 
 echo "== Add the sidecar alongside the existing main container =="
 az webapp sitecontainers create \
