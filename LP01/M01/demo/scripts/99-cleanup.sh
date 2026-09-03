@@ -18,8 +18,8 @@ echo "== Removing the scratch tag used to seed untagged manifests =="
 az acr repository untag --name "$ACR_NAME" --image "${IMAGE_NAME}:scratch" 2>/dev/null \
   || echo "  (no scratch tag found - already removed or never created)"
 
-echo "== Purging any remaining untagged manifests =="
-az acr run --registry "$ACR_NAME" --cmd "acr purge --filter '${IMAGE_NAME}:.*' --untagged --ago 0d" \
+echo "== Purging any remaining untagged manifests (leaves 'latest' and any other real tags alone) =="
+az acr run --registry "$ACR_NAME" --cmd "acr purge --filter '${IMAGE_NAME}:^\$' --untagged --ago 0d" \
   /dev/null --output none 2>/dev/null || true
 
 echo "== Unlocking v1 so it can be removed by a later full teardown =="

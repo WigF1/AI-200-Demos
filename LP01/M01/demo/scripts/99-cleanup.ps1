@@ -17,8 +17,8 @@ Write-Host "== Removing the scratch tag used to seed untagged manifests =="
 az acr repository untag --name $AcrName --image "${ImageName}:scratch" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Host "  (no scratch tag found - already removed or never created)" }
 
-Write-Host "== Purging any remaining untagged manifests =="
-az acr run --registry $AcrName --cmd "acr purge --filter '${ImageName}:.*' --untagged --ago 0d" `
+Write-Host "== Purging any remaining untagged manifests (leaves 'latest' and any other real tags alone) =="
+az acr run --registry $AcrName --cmd "acr purge --filter '${ImageName}:^`$' --untagged --ago 0d" `
   /dev/null --output none 2>$null
 
 Write-Host "== Unlocking v1 so it can be removed by a later full teardown =="
