@@ -73,8 +73,11 @@ Write-Host "== Verifying the Key Vault reference resolved (not stuck as an unres
 $subId = az account show --query id --output tsv
 $resolveStatus = "Unknown"
 for ($attempt = 1; $attempt -le 8; $attempt++) {
+    # The configreferences/appsettings endpoint returns {"value": [...]}, one
+    # entry per Key-Vault-referenced app setting - NOT an object keyed by
+    # setting name. Filter the array by name, then pull .properties.status.
     $url = "https://management.azure.com/subscriptions/$subId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName/config/configreferences/appsettings?api-version=2022-03-01"
-    $resolveStatus = az rest --method get --url $url --query "properties.MODEL_API_KEY.status" --output tsv
+    $resolveStatus = az rest --method get --url $url --query "value[?name=='MODEL_API_KEY'].properties.status | [0]" --output tsv
     if ($resolveStatus -eq "Resolved") {
         Write-Host "MODEL_API_KEY Key Vault reference status: Resolved"
         break

@@ -69,13 +69,12 @@ az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 
 echo "== Verifying the Key Vault reference resolved (not stuck as an unresolved pointer) =="
 for attempt in $(seq 1 8); do
-  KV_STATUS=$(az webapp config appsettings list --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
-    --query "[?name=='MODEL_API_KEY'].value | [0]" --output tsv)
-  # A resolved reference reads back as the app setting's own key vault
-  # reference status, not the secret value itself - check the dedicated API.
+  # The configreferences/appsettings endpoint returns {"value": [...]}, one
+  # entry per Key-Vault-referenced app setting - NOT an object keyed by
+  # setting name. Filter the array by name, then pull .properties.status.
   RESOLVE_STATUS=$(az rest --method get \
     --url "https://management.azure.com/subscriptions/$(az account show --query id -o tsv)/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/sites/${WEBAPP_NAME}/config/configreferences/appsettings?api-version=2022-03-01" \
-    --query "properties.MODEL_API_KEY.status" --output tsv 2>/dev/null || echo "Unknown")
+    --query "value[?name=='MODEL_API_KEY'].properties.status | [0]" --output tsv 2>/dev/null || echo "Unknown")
   if [ "$RESOLVE_STATUS" = "Resolved" ]; then
     echo "MODEL_API_KEY Key Vault reference status: Resolved"
     break
