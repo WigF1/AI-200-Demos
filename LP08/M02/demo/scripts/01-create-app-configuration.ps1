@@ -1,7 +1,7 @@
 # Slide 17: store, RBAC, labeled key-values, feature flag, Key Vault reference.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp08" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp08-secrets-config" }
 $AppConfigName = "appcs-$Suffix"
 $KeyVaultName = "kv-$Suffix"

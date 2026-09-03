@@ -1,7 +1,7 @@
 # Slide 6-7: Burstable tier, firewall rule, Entra admin alongside native auth.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp05" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp05-postgresql" }
 $PgServer = "pg-$Suffix"
 $PgAdminUser = "pgadmin"

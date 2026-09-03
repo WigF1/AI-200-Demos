@@ -1,7 +1,7 @@
 # Slide 6: Azure Managed Redis, Balanced tier (4:1 memory:vCPU) for standard workloads.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp06" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp06-redis" }
 $RedisName = "redis-$Suffix"
 

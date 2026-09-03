@@ -2,7 +2,7 @@
 # Slide 6: Account -> Database -> Container -> Item resource hierarchy.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp04}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp04-cosmosdb}"
 COSMOS_ACCOUNT="cosmos-${SUFFIX}"
 DATABASE_NAME="ragstore"

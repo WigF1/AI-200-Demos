@@ -3,7 +3,7 @@
 # Entra-based auth alongside PostgreSQL native auth.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp05}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp05-postgresql}"
 PG_SERVER="pg-${SUFFIX}"
 PG_ADMIN_USER="pgadmin"

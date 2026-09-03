@@ -2,7 +2,7 @@
 # Slide 9: Log Analytics workspace + workspace-based Application Insights.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp09}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp09-observe}"
 LOG_ANALYTICS_WORKSPACE="law-${SUFFIX}"
 APP_INSIGHTS="appi-${SUFFIX}"

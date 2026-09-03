@@ -2,7 +2,7 @@
 # Slide 6: Azure Managed Redis, Balanced tier (4:1 memory:vCPU) for standard workloads.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp06}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp06-redis}"
 REDIS_NAME="redis-${SUFFIX}"
 

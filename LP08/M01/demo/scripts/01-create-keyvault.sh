@@ -3,7 +3,7 @@
 # Secrets Officer (create/manage) so the demo scripts can run end to end.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp08}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp08-secrets-config}"
 KEYVAULT_NAME="kv-${SUFFIX}"
 

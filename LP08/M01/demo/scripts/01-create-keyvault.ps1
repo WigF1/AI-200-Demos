@@ -1,7 +1,7 @@
 # Slide 6: separate vault, RBAC authorization, grant Secrets Officer.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp08" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp08-secrets-config" }
 $KeyVaultName = "kv-$Suffix"
 

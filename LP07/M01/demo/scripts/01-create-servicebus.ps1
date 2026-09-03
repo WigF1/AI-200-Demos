@@ -1,7 +1,7 @@
 # Slide 5, 7: Standard tier namespace, one queue, one topic + 2 subscriptions.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp07" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp07-integrate" }
 $SbNamespace = "sb-$Suffix"
 $QueueName = "inference-requests"

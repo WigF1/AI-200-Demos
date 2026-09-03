@@ -1,7 +1,7 @@
 # Slide 30: Flex Consumption plan - per-function scaling, scales to zero.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp07" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp07-integrate" }
 $StorageAccount = "st$Suffix"
 $FunctionApp = "func-$Suffix"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp01}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp01-container-hosting}"
 ACR_NAME="${ACR_NAME:-acr${SUFFIX}}"
 IMAGE_NAME="inference-api"

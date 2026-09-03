@@ -3,7 +3,7 @@
 # topic + two subscriptions (fan-out).
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp07}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp07-integrate}"
 SB_NAMESPACE="sb-${SUFFIX}"
 QUEUE_NAME="inference-requests"

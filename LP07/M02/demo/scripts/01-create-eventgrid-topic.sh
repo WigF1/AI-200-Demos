@@ -2,7 +2,7 @@
 # Slide 18, 22: custom topic with CloudEvents v1.0 input schema.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp07}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp07-integrate}"
 EVENTGRID_TOPIC="evgt-${SUFFIX}"
 

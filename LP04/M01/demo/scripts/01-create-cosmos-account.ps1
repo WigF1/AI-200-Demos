@@ -1,7 +1,7 @@
 # Slide 6: Account -> Database -> Container -> Item resource hierarchy.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp04" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp04-cosmosdb" }
 $CosmosAccount = "cosmos-$Suffix"
 $DatabaseName = "ragstore"

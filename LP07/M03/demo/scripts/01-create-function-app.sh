@@ -2,7 +2,7 @@
 # Slide 30: Flex Consumption plan - per-function scaling, scales to zero.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp07}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp07-integrate}"
 STORAGE_ACCOUNT="st${SUFFIX}"
 FUNCTION_APP="func-${SUFFIX}"

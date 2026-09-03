@@ -3,7 +3,7 @@
 # and a feature flag.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp08}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp08-secrets-config}"
 APPCONFIG_NAME="appcs-${SUFFIX}"
 KEYVAULT_NAME="kv-${SUFFIX}"

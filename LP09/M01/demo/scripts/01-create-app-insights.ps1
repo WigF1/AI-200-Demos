@@ -1,7 +1,7 @@
 # Slide 9: Log Analytics workspace + workspace-based Application Insights.
 $ErrorActionPreference = "Stop"
 if (-not $Suffix) { $Suffix = "ai200lp09" }
-if (-not $Location) { $Location = "eastus" }
+if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp09-observe" }
 $LogAnalyticsWorkspace = "law-$Suffix"
 $AppInsights = "appi-$Suffix"

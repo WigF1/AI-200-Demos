@@ -2,7 +2,7 @@
 # Slide 30, 33: memory/planner tuning for vector workloads; optional read replica.
 set -euo pipefail
 SUFFIX="${SUFFIX:-ai200lp05}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-australiaeast}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp05-postgresql}"
 PG_SERVER="pg-${SUFFIX}"
 PG_REPLICA="pg-${SUFFIX}-replica"
