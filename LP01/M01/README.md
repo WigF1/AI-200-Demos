@@ -18,7 +18,10 @@ functionally identical — pick whichever matches your terminal.
 | `01-create-acr` | Slide 5: managed private registry, service tiers |
 | `02-build-push-acr-task` | Slide 7: ACR Tasks quick build (cloud build, no local Docker) |
 | `03-tag-version-lock` | Slide 6 & 8: tags vs. immutable digests, image locking |
-| `04-cleanup-untagged` | Slide 8: scheduled purge of untagged images |
+| `04-seed-untagged-images` | Slide 8: manufactures orphaned manifests so the purge task below has real matches |
+| `05-cleanup-untagged` | Slide 8: scheduled purge of untagged images, with before/after counts |
+| `06-attempt-blocked-overwrite` | Slide 8: proves the lock from `03` actually blocks an overwrite/delete, then unlocks/re-locks |
+| `99-cleanup` | Removes what this module created (purge task, seeded images); leaves the ACR + image in place since `LP01/M02` depends on them |
 
 See [`links.md`](./links.md) for the full Microsoft Learn reference list.
 
@@ -29,5 +32,15 @@ cd demo/scripts
 ./01-create-acr.sh          # or .ps1
 ./02-build-push-acr-task.sh
 ./03-tag-version-lock.sh
-./04-cleanup-untagged.sh
+./04-seed-untagged-images.sh
+./05-cleanup-untagged.sh
+./06-attempt-blocked-overwrite.sh
 ```
+
+## Cleaning up
+
+```bash
+./99-cleanup.sh             # removes only what M01 created; keeps the ACR/image M02 needs
+```
+
+To remove everything in LP01 (both modules), run `LP01/99-cleanup-all.sh` instead.

@@ -9,6 +9,18 @@ Source deck: `AI-200T00A-ENU-PowerPoint_01.pptx`
 
 Both modules deploy the shared demo app in [`/shared/inference-api`](../shared/inference-api).
 
-Run order: `LP01/M01` scripts first (build & publish the image to ACR), then
-`LP01/M02` scripts (deploy that image to App Service, including the sidecar
-variant).
+Each module is self-contained — `M02` doesn't require `M01` to have run
+first; it will build/push the image itself via its `00-ensure-prereqs`
+script if needed. Running `M01` before `M02` is still the natural order
+(and the faster path, since `M02`'s prereq check becomes a no-op), but
+it's not required.
+
+## Cleaning up
+
+Each module has its own `demo/scripts/99-cleanup.sh`/`.ps1` that removes
+only what that module created. To remove everything LP01 created in one
+step (both modules, entire resource group), run:
+
+```bash
+./99-cleanup-all.sh          # or .ps1
+```

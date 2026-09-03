@@ -2,6 +2,13 @@
 # created in 01-deploy-app-service.ps1.
 Set-Location $PSScriptRoot
 . ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
+
+az webapp show --resource-group $ResourceGroup --name $WebAppName --output none 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Web app '$WebAppName' not found. Run ./01-deploy-app-service.ps1 first."
+    exit 1
+}
 
 Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers
@@ -33,6 +40,32 @@ az webapp sitecontainers list --name $WebAppName --resource-group $ResourceGroup
 
 Write-Host "== Restart so the sidecar starts =="
 az webapp restart --resource-group $ResourceGroup --name $WebAppName
+
+Write-Host "== Verify the main app still serves traffic with the sidecar attached =="
+$HostName = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostName -o tsv
+$status = "000"
+for ($attempt = 1; $attempt -le 12; $attempt++) {
+    try {
+        $response = Invoke-WebRequest -Uri "https://$HostName/health" -UseBasicParsing -TimeoutSec 10
+        $status = $response.StatusCode
+    } catch {
+        $status = "000"
+    }
+    if ($status -eq 200) {
+        Write-Host "Main app healthy (HTTP $status) with sidecar attached, after $attempt attempt(s)."
+        break
+    }
+    Write-Host "  attempt $attempt`: HTTP $status - retrying in 10s"
+    Start-Sleep -Seconds 10
+}
+
+Write-Host ""
+Write-Host "== Streaming logs for 15s to catch the sidecar's startup lines =="
+$logJob = Start-Job -ScriptBlock { az webapp log tail --resource-group $using:ResourceGroup --name $using:WebAppName }
+Start-Sleep -Seconds 15
+Receive-Job -Job $logJob
+Stop-Job -Job $logJob | Out-Null
+Remove-Job -Job $logJob | Out-Null
 
 Write-Host @"
 

@@ -22,11 +22,45 @@ LP01/                  Deck 1: Implement container application hosting on Azure
       manifests/         Kubernetes YAML, where relevant (AKS learning path)
   M02/
     ...
+  99-cleanup-all.sh/.ps1  Deletes the whole LP's resource group in one step
 LP02/ ... LP09/         Same pattern for the remaining 8 decks
 shared/inference-api/    One small Flask app reused as the deploy target
                          across LP01 (App Service), LP02 (Container Apps),
                          and LP03 (AKS) - same code, three compute platforms
+shared/lib/              Small helpers sourced by scripts across learning
+                         paths (currently: RBAC-propagation waiting)
 ```
+
+## Module independence
+
+Every module's scripts are runnable on their own — you don't have to run
+`M01` before `M02`, `M02` before `M03`, and so on. Where a module needs a
+resource an earlier module would normally have created (an ACR, a
+Kubernetes cluster, a Cosmos DB account, etc.), its scripts source a
+`00-ensure-prereqs.sh`/`.ps1` that checks whether the resource already
+exists and creates it if not. If the earlier module already ran, this is
+a fast no-op; if it didn't, the module bootstraps what it needs. Running
+modules in order is still the natural, faster path - it's just not
+required.
+
+## Cleaning up
+
+Every module has a `demo/scripts/99-cleanup.sh`/`.ps1` that removes only
+what that module created, so tearing one down doesn't break a sibling
+module that shares the same resource group. Each learning path also has
+a top-level `99-cleanup-all.sh`/`.ps1` that deletes the entire resource
+group in one step (with a type-to-confirm prompt) once you're done with
+the whole learning path.
+
+## RBAC propagation
+
+Several scripts assign a role (e.g. AcrPull, Key Vault Secrets User) and
+then immediately need it - a common source of flaky "it worked when I
+re-ran it" failures, since role assignments are visible in the control
+plane almost immediately but the data plane that enforces them can lag
+by up to a couple of minutes. Those scripts source
+`shared/lib/rbac-wait.sh`/`.ps1`, which polls for the assignment to
+appear and then adds a short buffer before continuing.
 
 ## Learning paths
 

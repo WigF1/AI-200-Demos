@@ -8,6 +8,12 @@
 # excluded. Docs: https://learn.microsoft.com/en-us/azure/app-service/overview-sidecar
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
+
+if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --output none 2>/dev/null; then
+  echo "Web app '$WEBAPP_NAME' not found. Run ./01-deploy-app-service.sh first." >&2
+  exit 1
+fi
 
 echo "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 az webapp sitecontainers convert \
@@ -43,8 +49,24 @@ az webapp sitecontainers list \
   --resource-group "$RESOURCE_GROUP" \
   --output table
 
-echo "== Restart so the sidecar starts, then check the log stream for its startup lines =="
+echo "== Restart so the sidecar starts =="
 az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+
+echo "== Verify the main app still serves traffic with the sidecar attached =="
+HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query defaultHostName -o tsv)
+for attempt in $(seq 1 12); do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${HOSTNAME}/health" || echo "000")
+  if [ "$STATUS" = "200" ]; then
+    echo "Main app healthy (HTTP $STATUS) with sidecar attached, after ${attempt} attempt(s)."
+    break
+  fi
+  echo "  attempt ${attempt}: HTTP $STATUS - retrying in 10s"
+  sleep 10
+done
+
+echo
+echo "== Streaming logs for 15s to catch the sidecar's startup lines =="
+timeout 15 az webapp log tail --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" || true
 
 cat <<'TXT'
 
