@@ -1,0 +1,12 @@
+# Slide 7: ClusterIP Service - internal-only endpoint for app-to-app traffic.
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-api-internal
+spec:
+  type: ClusterIP
+  selector:
+    app: inference-api
+  ports:
+  - port: 80
+    targetPort: 8000

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SUFFIX="${SUFFIX:-ai200lp01}"
+LOCATION="${LOCATION:-eastus}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp01-container-hosting}"
+ACR_NAME="${ACR_NAME:-acr${SUFFIX}}"
+IMAGE_NAME="inference-api"
+IMAGE_TAG="v1"
+APP_SERVICE_PLAN="asp-${SUFFIX}"
+WEBAPP_NAME="app-${SUFFIX}"
+WEBAPP_SKU="B1"
+STAGING_SLOT_NAME="staging"
+KEYVAULT_NAME="kv-${SUFFIX}"
+KV_SECRET_NAME="model-api-key"
+echo "RESOURCE_GROUP=$RESOURCE_GROUP  WEBAPP_NAME=$WEBAPP_NAME  ACR_NAME=$ACR_NAME"

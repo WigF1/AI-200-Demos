@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SUFFIX="${SUFFIX:-ai200lp03}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp03-aks}"
+AKS_CLUSTER="aks-${SUFFIX}"
+NAMESPACE="ai-workloads"
+echo "RESOURCE_GROUP=$RESOURCE_GROUP  AKS_CLUSTER=$AKS_CLUSTER  NAMESPACE=$NAMESPACE"

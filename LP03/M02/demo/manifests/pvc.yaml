@@ -1,0 +1,12 @@
+# Slide 18: PVC requesting Azure Disk-backed storage, ReadWriteOnce.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: inference-api-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: managed-csi
+  resources:
+    requests:
+      storage: 1Gi

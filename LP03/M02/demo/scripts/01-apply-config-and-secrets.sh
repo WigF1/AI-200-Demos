@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Slides 16-17: apply ConfigMap + Secret, verify they reach the Pod as env vars.
+set -euo pipefail
+cd "$(dirname "$0")"; source ./00-vars.sh
+
+az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
+LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer --output tsv)
+
+kubectl apply -n "$NAMESPACE" -f ../manifests/configmap.yaml
+
+echo "== Create the Secret imperatively so no real value is ever committed to git =="
+kubectl create secret generic inference-api-secret \
+  --from-literal=MODEL_API_KEY='demo-api-key-not-real-1234567890' \
+  -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+sed "s#<ACR_LOGIN_SERVER>#${LOGIN_SERVER}#g" ../manifests/deployment-configured.yaml > /tmp/deployment-configured.yaml
+kubectl apply -n "$NAMESPACE" -f /tmp/deployment-configured.yaml
+kubectl rollout status deployment/inference-api -n "$NAMESPACE"
+
+echo "== Verify: the app's /config endpoint should now show modelApiKeyResolved=true =="
+POD=$(kubectl get pods -n "$NAMESPACE" -l app=inference-api -o jsonpath='{.items[0].metadata.name}')
+kubectl exec "$POD" -n "$NAMESPACE" -- python -c \
+  "import urllib.request,json; print(json.load(urllib.request.urlopen('http://localhost:8000/config')))"

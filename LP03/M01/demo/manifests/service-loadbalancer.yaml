@@ -1,0 +1,12 @@
+# Slide 7: LoadBalancer Service - Azure-managed public entry point (production).
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-api-external
+spec:
+  type: LoadBalancer
+  selector:
+    app: inference-api   # must match Pod labels
+  ports:
+  - port: 80              # client-facing port
+    targetPort: 8000       # container-facing port

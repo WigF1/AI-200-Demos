@@ -1,0 +1,69 @@
+// LP09 / M02 - KQL query pack for the LP09/M01 instrumented app
+// Run each block individually in the Application Insights "Logs" blade.
+
+// ---------------------------------------------------------------------
+// Slide 19: aggregate requests by hour and service, render as a timechart
+// ---------------------------------------------------------------------
+requests
+| where timestamp > ago(24h)
+| summarize requestCount = count(),
+    avgDuration = avg(duration)
+    by bin(timestamp, 1h), cloud_RoleName
+| render timechart
+
+
+// ---------------------------------------------------------------------
+// Slide 20: sampling-aware exception counting - use sum(itemCount), not
+// count(), so totals stay accurate when sampling is active.
+// ---------------------------------------------------------------------
+exceptions
+| where timestamp > ago(24h)
+| summarize exceptionCount = sum(itemCount)
+    by bin(timestamp, 1h), type
+| render timechart
+
+
+// ---------------------------------------------------------------------
+// Slide 21: percentile latency - reveals outliers averages hide.
+// Run against the LP09/M01 app after sending a handful of /classify calls.
+// ---------------------------------------------------------------------
+requests
+| where timestamp > ago(1h)
+| summarize p50 = percentile(duration, 50),
+    p95 = percentile(duration, 95),
+    p99 = percentile(duration, 99)
+    by cloud_RoleName
+
+
+// ---------------------------------------------------------------------
+// Slide 21: dependency latency and failures, grouped by target/result code.
+// ---------------------------------------------------------------------
+dependencies
+| where timestamp > ago(24h)
+| summarize count(), avgDuration = avg(duration)
+    by target, resultCode, success
+| order by avgDuration desc
+
+
+// ---------------------------------------------------------------------
+// Slide 10 / 20: find slow requests and join to their dependency calls on
+// operation_Id to trace the full request chain.
+// ---------------------------------------------------------------------
+requests
+| where duration > 200  // ms - lower threshold for demo traffic than production
+| join kind=inner (dependencies) on operation_Id
+| project requestName = name,
+    dependencyName = name1,
+    dependencyDuration = duration1
+| order by dependencyDuration desc
+
+
+// ---------------------------------------------------------------------
+// Slide 23: alert query - detect a high failure rate per service.
+// This is the query wired into 01-create-alert-rule.sh/.ps1.
+// ---------------------------------------------------------------------
+requests
+| where success == false
+| summarize failedCount = count()
+    by cloud_RoleName
+| where failedCount > 10

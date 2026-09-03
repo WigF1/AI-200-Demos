@@ -1,0 +1,11 @@
+# Slide 16: non-sensitive settings, up to 1 MiB, updatable without rebuild.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-api-config
+data:
+  FEATURE_X_ENABLED: "true"
+  MODEL_ENDPOINT: "https://api.example.com/v1/classify"
+  app.config: |
+    log_level=info
+    timeout_seconds=30

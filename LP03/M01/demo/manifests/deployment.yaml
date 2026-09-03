@@ -1,0 +1,47 @@
+# Slide 6: Kubernetes Deployment manifest for the shared inference-api demo app.
+# Replace <ACR_LOGIN_SERVER> with the value printed by 01-create-aks-cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-api
+  labels:
+    app: inference-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: inference-api        # must match template labels
+  template:
+    metadata:
+      labels:
+        app: inference-api      # must match selector
+    spec:
+      containers:
+      - name: inference-api
+        image: <ACR_LOGIN_SERVER>/inference-api:v1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: APP_ENVIRONMENT
+          value: "production"
+        - name: IMAGE_VERSION
+          value: "v1"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20

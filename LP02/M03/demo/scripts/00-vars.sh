@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SUFFIX="${SUFFIX:-ai200lp02}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp02-container-apps}"
+ACA_APP="aca-${SUFFIX}"
+SERVICEBUS_NAMESPACE="${SERVICEBUS_NAMESPACE:-sb-${SUFFIX}}"
+SERVICEBUS_QUEUE="${SERVICEBUS_QUEUE:-inference-requests}"
+echo "RESOURCE_GROUP=$RESOURCE_GROUP  ACA_APP=$ACA_APP"
