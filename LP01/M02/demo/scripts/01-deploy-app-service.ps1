@@ -10,8 +10,17 @@ $ImageRef = "$LoginServer/${ImageName}:${ImageTag}"
 az appservice plan create --resource-group $ResourceGroup --name $AppServicePlan `
   --is-linux --sku $WebAppSku --output table
 
+# You'll see a warning here: "No credential was provided to access Azure
+# Container Registry... Retrieving credentials failed..." That's expected,
+# not a failure - 00-ensure-prereqs.ps1 (mirroring 01-create-acr.ps1)
+# deliberately creates the ACR with --admin-enabled false, so there ARE no
+# admin credentials for az to fall back to. The app is created pointing at
+# the image regardless; it just can't pull it yet. The role assignment +
+# acrUseManagedIdentityCreds below are what actually let it pull, which is
+# the whole point of this module (managed identity over admin credentials,
+# slide 16).
 az webapp create --resource-group $ResourceGroup --plan $AppServicePlan `
-  --name $WebAppName --deployment-container-image-name $ImageRef --output table
+  --name $WebAppName --container-image-name $ImageRef --output table
 
 az webapp identity assign --resource-group $ResourceGroup --name $WebAppName --output table
 $PrincipalId = az webapp identity show --resource-group $ResourceGroup --name $WebAppName --query principalId --output tsv
