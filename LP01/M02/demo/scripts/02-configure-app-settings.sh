@@ -18,8 +18,16 @@ az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEB
   --settings APP_ENVIRONMENT="production" FEATURE_X_ENABLED="true" \
     MODEL_ENDPOINT="https://api.example.com/v1/classify" IMAGE_VERSION="$IMAGE_TAG"
 
-az keyvault create --resource-group "$RESOURCE_GROUP" --name "$KEYVAULT_NAME" \
-  --location "$LOCATION" --enable-rbac-authorization true --output table
+# az keyvault create isn't idempotent the way az group/acr create are -
+# Key Vault names are globally reserved, so re-running create against an
+# existing vault throws "already exists" instead of silently succeeding.
+# Guard it like everything else here that's meant to survive re-runs.
+if az keyvault show --name "$KEYVAULT_NAME" --output none 2>/dev/null; then
+  echo "Key Vault '$KEYVAULT_NAME' already exists."
+else
+  az keyvault create --resource-group "$RESOURCE_GROUP" --name "$KEYVAULT_NAME" \
+    --location "$LOCATION" --enable-rbac-authorization true --output table
+fi
 KV_ID=$(az keyvault show --name "$KEYVAULT_NAME" --query id --output tsv)
 
 # --enable-rbac-authorization true switches the vault to RBAC-controlled
@@ -42,8 +50,14 @@ VERSIONLESS_URI="${SECRET_URI%/*}"
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --settings MODEL_API_KEY="@Microsoft.KeyVault(SecretUri=${VERSIONLESS_URI}/)"
 
-az webapp deployment slot create --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
-  --slot "$STAGING_SLOT_NAME"
+# az webapp deployment slot create also isn't idempotent - guard it too.
+if az webapp deployment slot show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
+     --slot "$STAGING_SLOT_NAME" --output none 2>/dev/null; then
+  echo "Deployment slot '$STAGING_SLOT_NAME' already exists."
+else
+  az webapp deployment slot create --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
+    --slot "$STAGING_SLOT_NAME"
+fi
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --slot "$STAGING_SLOT_NAME" --settings APP_ENVIRONMENT="staging" --slot-settings APP_ENVIRONMENT
 
