@@ -20,13 +20,22 @@ az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppN
 
 az keyvault create --resource-group $ResourceGroup --name $KeyVaultName `
   --location $Location --enable-rbac-authorization true --output table
+$KvId = az keyvault show --name $KeyVaultName --query id --output tsv
+
+# --enable-rbac-authorization true switches the vault to RBAC-controlled
+# data-plane access. Unlike the classic access-policy model, creating the
+# vault does NOT grant the creator (you) any data-plane rights on it - so
+# the next command (setting the secret) fails with a 403 unless you grant
+# yourself a role first. This is the most common Key Vault RBAC gotcha.
+$CallerId = Get-CurrentPrincipalId
+Write-Host "== Granting the caller Key Vault Secrets Officer so this script can write the secret =="
+Set-RoleAssignment -PrincipalId $CallerId -Scope $KvId -Role "Key Vault Secrets Officer"
+
 az keyvault secret set --vault-name $KeyVaultName --name $KvSecretName `
   --value "demo-api-key-not-real-1234567890" --output none
 
 $PrincipalId = az webapp identity show --resource-group $ResourceGroup --name $WebAppName --query principalId --output tsv
-$KvId = az keyvault show --name $KeyVaultName --query id --output tsv
-az role assignment create --assignee $PrincipalId --scope $KvId --role "Key Vault Secrets User"
-Wait-ForRoleAssignment -PrincipalId $PrincipalId -Scope $KvId -Role "Key Vault Secrets User"
+Set-RoleAssignment -PrincipalId $PrincipalId -Scope $KvId -Role "Key Vault Secrets User"
 
 $SecretUri = az keyvault secret show --vault-name $KeyVaultName --name $KvSecretName --query id --output tsv
 $VersionlessUri = $SecretUri.Substring(0, $SecretUri.LastIndexOf('/'))

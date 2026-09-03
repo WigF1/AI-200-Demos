@@ -27,8 +27,7 @@ az webapp identity assign --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAM
 PRINCIPAL_ID=$(az webapp identity show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --query principalId --output tsv)
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id --output tsv)
 
-az role assignment create --assignee "$PRINCIPAL_ID" --scope "$ACR_ID" --role "AcrPull"
-wait_for_role_assignment "$PRINCIPAL_ID" "$ACR_ID" "AcrPull"
+ensure_role_assignment "$PRINCIPAL_ID" "$ACR_ID" "AcrPull"
 
 az webapp config set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --generic-configurations '{"acrUseManagedIdentityCreds": true}'
