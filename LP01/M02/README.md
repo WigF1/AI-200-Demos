@@ -19,6 +19,15 @@ You don't need to run `LP01/M01` first. Every script here sources
 missing. If `M01` already ran, this is a fast no-op; if it didn't, this
 module builds what it needs on the fly.
 
+## Cost note: App Service plan is P0V3, not Basic
+
+`02-configure-app-settings` creates a deployment slot, and Basic tier
+doesn't support deployment slots at all - only Standard, Premium, or
+Isolated do. The plan is created (or, if you already ran `01` before this
+was fixed, upgraded on re-run) as `P0V3`, the cheapest SKU that supports
+slots. This costs meaningfully more than Basic while it's running -
+run `99-cleanup.sh` promptly when you're done for the day.
+
 ## Demo scripts
 
 | Script | Slide touch point |
