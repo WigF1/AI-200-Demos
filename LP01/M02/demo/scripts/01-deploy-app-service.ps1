@@ -3,6 +3,7 @@ Set-Location $PSScriptRoot
 . ./00-vars.ps1
 . ./00-ensure-prereqs.ps1
 . ../../../../shared/lib/rbac-wait.ps1
+. ../../../../shared/lib/app-health.ps1
 
 $LoginServer = az acr show --name $AcrName --query loginServer --output tsv
 $ImageRef = "$LoginServer/${ImageName}:${ImageTag}"
@@ -43,21 +44,9 @@ az webapp restart --resource-group $ResourceGroup --name $WebAppName
 $Host2 = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostName -o tsv
 $HealthUrl = "https://$Host2/health"
 Write-Host "== Verifying the app comes up healthy: $HealthUrl =="
-$status = "000"
-for ($attempt = 1; $attempt -le 12; $attempt++) {
-    try {
-        $response = Invoke-WebRequest -Uri $HealthUrl -UseBasicParsing -TimeoutSec 10
-        $status = $response.StatusCode
-    } catch {
-        $status = "000"
-    }
-    if ($status -eq 200) {
-        Write-Host "Healthy (HTTP $status) after $attempt attempt(s)."
-        break
-    }
-    Write-Host "  attempt $attempt`: HTTP $status - retrying in 10s (cold start / image pull can take a minute)"
-    Start-Sleep -Seconds 10
-}
-if ($status -ne 200) {
-    Write-Warning "Still not healthy after 2 minutes - check logs: az webapp log tail -g $ResourceGroup -n $WebAppName"
+# Checks the response body, not just the status code - App Service serves
+# its own HTTP 200 placeholder page while the container is still starting,
+# which a status-code-only check can't tell apart from the real app.
+if (-not (Wait-ForAppHealth -Url $HealthUrl -ExpectHealthy $true)) {
+    Write-Warning "Still not healthy - check logs: az webapp log tail -g $ResourceGroup -n $WebAppName"
 }

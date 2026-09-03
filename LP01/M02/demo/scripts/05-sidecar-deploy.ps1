@@ -3,6 +3,7 @@
 Set-Location $PSScriptRoot
 . ./00-vars.ps1
 . ./00-ensure-prereqs.ps1
+. ../../../../shared/lib/app-health.ps1
 
 az webapp show --resource-group $ResourceGroup --name $WebAppName --output none 2>$null
 if ($LASTEXITCODE -ne 0) {
@@ -56,21 +57,7 @@ az webapp restart --resource-group $ResourceGroup --name $WebAppName
 
 Write-Host "== Verify the main app still serves traffic with the sidecar attached =="
 $HostName = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostName -o tsv
-$status = "000"
-for ($attempt = 1; $attempt -le 12; $attempt++) {
-    try {
-        $response = Invoke-WebRequest -Uri "https://$HostName/health" -UseBasicParsing -TimeoutSec 10
-        $status = $response.StatusCode
-    } catch {
-        $status = "000"
-    }
-    if ($status -eq 200) {
-        Write-Host "Main app healthy (HTTP $status) with sidecar attached, after $attempt attempt(s)."
-        break
-    }
-    Write-Host "  attempt $attempt`: HTTP $status - retrying in 10s"
-    Start-Sleep -Seconds 10
-}
+Wait-ForAppHealth -Url "https://$HostName/health" -ExpectHealthy $true | Out-Null
 
 Write-Host ""
 Write-Host "== Streaming logs for 15s to catch the sidecar's startup lines =="

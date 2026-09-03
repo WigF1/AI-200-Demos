@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Shared helper: poll a /health endpoint and confirm the app is ACTUALLY
+# healthy, not just that something answered HTTP 200. Azure App Service
+# serves its own default placeholder page (also HTTP 200) while a
+# container is starting, restarting, or has failed to start entirely -
+# checking the status code alone can't tell that apart from a real
+# response from the app's own /health endpoint. This checks the response
+# body for the app's own {"status": "healthy", ...} payload (see
+# shared/inference-api/app.py's /health route) in addition to the code.
+#
+# Usage: source this file, then:
+#   wait_for_app_health "$URL" true    # wait until genuinely healthy
+#   wait_for_app_health "$URL" false   # wait until genuinely NOT healthy
+#   wait_for_app_health "$URL" true 20 15   # optional: max attempts, delay seconds
+
+wait_for_app_health() {
+  local url="$1" expect_healthy="$2" max_attempts="${3:-12}" delay_seconds="${4:-10}"
+  local attempt status body_file body is_healthy
+
+  body_file=$(mktemp)
+  for attempt in $(seq 1 "$max_attempts"); do
+    status=$(curl -s -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+    body=$(cat "$body_file" 2>/dev/null)
+
+    is_healthy="false"
+    if [ "$status" = "200" ] && echo "$body" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
+      is_healthy="true"
+    fi
+
+    if [ "$is_healthy" = "$expect_healthy" ]; then
+      echo "HTTP $status, app healthy=$is_healthy (as expected) after ${attempt} attempt(s)."
+      rm -f "$body_file"
+      return 0
+    fi
+    echo "  attempt ${attempt}: HTTP $status, app healthy=$is_healthy - retrying in ${delay_seconds}s"
+    sleep "$delay_seconds"
+  done
+
+  echo "Did not reach expected state (healthy=$expect_healthy) after $((max_attempts * delay_seconds))s (last: HTTP $status, app healthy=$is_healthy)." >&2
+  rm -f "$body_file"
+  return 1
+}

@@ -33,7 +33,7 @@ run `99-cleanup.sh` promptly when you're done for the day.
 | Script | Slide touch point |
 |---|---|
 | `00-ensure-prereqs` | Idempotently creates the RG/ACR/image if `M01` hasn't run — makes this module self-contained (sourced automatically by the scripts below) |
-| `01-deploy-app-service` | Slide 16-17: deploy from ACR, managed identity + AcrPull, `WEBSITES_PORT`; waits out RBAC propagation and polls `/health` until it's actually up |
+| `01-deploy-app-service` | Slide 16-17: deploy from ACR, managed identity + AcrPull, `WEBSITES_PORT`; waits out RBAC propagation and polls `/health` (checking the response body, not just the status code — App Service serves its own HTTP 200 placeholder page while a container is starting) until it's genuinely up |
 | `02-configure-app-settings` | Slide 18: app settings, Key Vault reference, deployment slot + slot setting; grants the caller (you) Key Vault Secrets Officer before writing the secret (RBAC-mode vaults don't grant the creator any data-plane rights), then grants the web app's identity Key Vault Secrets User and confirms the reference actually resolves |
 | `03-verify-troubleshoot` | Slide 19: log stream, health check, Kudu links |
 | `04-break-fix-demo` | Slide 19: live break/fix walkthrough — actually breaks `WEBSITES_PORT`, confirms the failure, fixes it, confirms recovery |

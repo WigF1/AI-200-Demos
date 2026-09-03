@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
 source ./00-ensure-prereqs.sh
 source ../../../../shared/lib/rbac-wait.sh
+source ../../../../shared/lib/app-health.sh
 
 LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer --output tsv)
 IMAGE_REF="${LOGIN_SERVER}/${IMAGE_NAME}:${IMAGE_TAG}"
@@ -44,15 +45,8 @@ az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query defaultHostName -o tsv)
 HEALTH_URL="https://${HOSTNAME}/health"
 echo "== Verifying the app comes up healthy: $HEALTH_URL =="
-for attempt in $(seq 1 12); do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
-  if [ "$STATUS" = "200" ]; then
-    echo "Healthy (HTTP $STATUS) after ${attempt} attempt(s)."
-    break
-  fi
-  echo "  attempt ${attempt}: HTTP $STATUS - retrying in 10s (cold start / image pull can take a minute)"
-  sleep 10
-done
-if [ "$STATUS" != "200" ]; then
-  echo "Still not healthy after 2 minutes - check logs: az webapp log tail -g $RESOURCE_GROUP -n $WEBAPP_NAME" >&2
-fi
+# Checks the response body, not just the status code - App Service serves
+# its own HTTP 200 placeholder page while the container is still starting,
+# which a status-code-only check can't tell apart from the real app.
+wait_for_app_health "$HEALTH_URL" true || \
+  echo "Still not healthy - check logs: az webapp log tail -g $RESOURCE_GROUP -n $WEBAPP_NAME" >&2

@@ -9,6 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
 source ./00-ensure-prereqs.sh
+source ../../../../shared/lib/app-health.sh
 
 if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --output none 2>/dev/null; then
   echo "Web app '$WEBAPP_NAME' not found. Run ./01-deploy-app-service.sh first." >&2
@@ -65,15 +66,7 @@ az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 
 echo "== Verify the main app still serves traffic with the sidecar attached =="
 HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query defaultHostName -o tsv)
-for attempt in $(seq 1 12); do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${HOSTNAME}/health" || echo "000")
-  if [ "$STATUS" = "200" ]; then
-    echo "Main app healthy (HTTP $STATUS) with sidecar attached, after ${attempt} attempt(s)."
-    break
-  fi
-  echo "  attempt ${attempt}: HTTP $STATUS - retrying in 10s"
-  sleep 10
-done
+wait_for_app_health "https://${HOSTNAME}/health" true || true
 
 echo
 echo "== Streaming logs for 15s to catch the sidecar's startup lines =="
