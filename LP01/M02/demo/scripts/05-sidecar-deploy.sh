@@ -16,6 +16,20 @@ if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --o
   exit 1
 fi
 
+# Remove the legacy "log-forwarder" sidecar (the old OTel/AppInsights
+# image that crash-loops without an App Insights connection string - see
+# the image comment below) if it's still hanging around from before this
+# script was fixed. This can't just live in 99-cleanup.sh: while you're
+# iterating on this script directly, a leftover crash-looping container
+# stays present and can keep taking the whole site down on every restart,
+# regardless of whether the CURRENT sidecar image is fine.
+if az webapp sitecontainers show --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+     --container-name log-forwarder --output none 2>/dev/null; then
+  echo "== Removing leftover 'log-forwarder' sidecar from before this script was fixed =="
+  az webapp sitecontainers delete --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+    --container-name log-forwarder --output none
+fi
+
 echo "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 # --yes suppresses the interactive "are you sure?" confirmation prompt
 # this command shows by default. Without it, the prompt (along with any
@@ -108,8 +122,12 @@ az webapp sitecontainers status --name "$WEBAPP_NAME" --resource-group "$RESOURC
 
 echo
 echo "== Sidecar's own startup logs (the container-specific equivalent of 'log tail') =="
-az webapp sitecontainers log --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
-  --container-name "$SIDECAR_NAME" || echo "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WEBAPP_NAME -g $RESOURCE_GROUP --container-name $SIDECAR_NAME)"
+# timeout wrapped: this command can hang instead of returning promptly
+# when there's nothing to fetch yet (e.g. a 404 because the container
+# never started) - same class of unbounded-blocking issue as the
+# confirmation prompt earlier in this script.
+timeout 20 az webapp sitecontainers log --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+  --container-name "$SIDECAR_NAME" || echo "  (no logs yet, or the command timed out - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WEBAPP_NAME -g $RESOURCE_GROUP --container-name $SIDECAR_NAME)"
 
 cat <<TXT
 

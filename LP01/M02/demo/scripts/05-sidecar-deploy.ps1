@@ -11,6 +11,21 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Remove the legacy "log-forwarder" sidecar (the old OTel/AppInsights
+# image that crash-loops without an App Insights connection string - see
+# the image comment below) if it's still hanging around from before this
+# script was fixed. This can't just live in 99-cleanup.ps1: while you're
+# iterating on this script directly, a leftover crash-looping container
+# stays present and can keep taking the whole site down on every restart,
+# regardless of whether the CURRENT sidecar image is fine.
+az webapp sitecontainers show --name $WebAppName --resource-group $ResourceGroup `
+  --container-name log-forwarder --output none 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "== Removing leftover 'log-forwarder' sidecar from before this script was fixed =="
+    az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
+      --container-name log-forwarder --output none
+}
+
 Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 # --yes suppresses the interactive "are you sure?" confirmation prompt
 # this command shows by default. Without it, the prompt (along with any
@@ -100,8 +115,21 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (status not available yet - try again i
 
 Write-Host ""
 Write-Host "== Sidecar's own startup logs (the container-specific equivalent of 'log tail') =="
-az webapp sitecontainers log --name $WebAppName --resource-group $ResourceGroup --container-name $SidecarName
-if ($LASTEXITCODE -ne 0) { Write-Host "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WebAppName -g $ResourceGroup --container-name $SidecarName)" }
+# Wrapped in a background job with a timeout: this command can hang
+# instead of returning promptly when there's nothing to fetch yet (e.g. a
+# 404 because the container never started) - same class of unbounded-
+# blocking issue as the confirmation prompt earlier in this script.
+$logJob = Start-Job -ScriptBlock {
+    az webapp sitecontainers log --name $using:WebAppName --resource-group $using:ResourceGroup --container-name $using:SidecarName
+}
+if (Wait-Job -Job $logJob -Timeout 20) {
+    Receive-Job -Job $logJob
+} else {
+    Write-Host "  (command timed out after 20s - the sidecar may still be starting)"
+}
+Stop-Job -Job $logJob | Out-Null
+Remove-Job -Job $logJob -Force | Out-Null
+Write-Host "  Re-run manually if needed: az webapp sitecontainers log --name $WebAppName -g $ResourceGroup --container-name $SidecarName"
 
 Write-Host @"
 
