@@ -26,10 +26,15 @@ $LawId = az monitor log-analytics workspace show --resource-group $ResourceGroup
 $LawKey = az monitor log-analytics workspace get-shared-keys --resource-group $ResourceGroup `
   --workspace-name $LogAnalyticsWorkspace --query primarySharedKey --output tsv
 
-az containerapp env show --name $AcaEnv --resource-group $ResourceGroup --output none 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Container Apps environment '$AcaEnv' already exists."
+$EnvState = az containerapp env show --name $AcaEnv --resource-group $ResourceGroup --query properties.provisioningState --output tsv 2>$null
+if ($EnvState -eq "Succeeded") {
+    Write-Host "Container Apps environment '$AcaEnv' already exists and is healthy."
 } else {
+    if ($EnvState) {
+        Write-Host "Container Apps environment '$AcaEnv' exists but is in state '$EnvState' (not Succeeded) - deleting so it can be recreated cleanly."
+        az containerapp env delete --name $AcaEnv --resource-group $ResourceGroup --yes
+    }
+    Write-Host "Creating Container Apps environment (can take several minutes; if this fails with a ManagedCluster/provisioning error, it's an Azure-side issue - re-running will clean up and retry)"
     az containerapp env create `
       --name $AcaEnv --resource-group $ResourceGroup --location $Location `
       --logs-workspace-id $LawId --logs-workspace-key $LawKey --output table
