@@ -12,9 +12,14 @@ if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --o
   exit 1
 fi
 
-echo "NOTE: avoid running other scripts against this app (e.g. 03-verify-troubleshoot.sh)"
-echo "while this is running. Any config change triggers its own automatic restart, and a"
-echo "concurrent restart can race this one and produce misleading results."
+echo "NOTE: this uses 'az webapp stop' + 'az webapp start' rather than 'az webapp restart'."
+echo "Testing showed 'restart' doesn't reliably tear down the container that's already"
+echo "serving traffic - a new (broken) container can fail behind the scenes while Azure"
+echo "keeps the old one alive and answering requests, making the app LOOK unaffected."
+echo "A full stop guarantees nothing is left running before the bad config is applied."
+echo "Also avoid running other scripts against this app (e.g. 03-verify-troubleshoot.sh)"
+echo "while this is running - any config change triggers its own restart, which can still"
+echo "race this one."
 echo
 
 HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query defaultHostName -o tsv)
@@ -27,7 +32,8 @@ echo
 echo "== Break it: point WEBSITES_PORT at a port the container isn't listening on =="
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --settings WEBSITES_PORT=9999 --output none
-az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+az webapp stop --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+az webapp start --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 
 # Self-check: confirm the setting actually stuck before trusting the health
 # poll below. If something else (another script, a concurrent restart)
@@ -54,7 +60,8 @@ echo
 echo "== Fix it: restore the correct port =="
 az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
   --settings WEBSITES_PORT=8000 --output none
-az webapp restart --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+az webapp stop --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+az webapp start --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
 
 echo "== Confirm it recovered =="
 wait_for_app_health "$HEALTH_URL" true

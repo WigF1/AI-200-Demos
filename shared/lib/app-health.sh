@@ -19,7 +19,12 @@ wait_for_app_health() {
 
   body_file=$(mktemp)
   for attempt in $(seq 1 "$max_attempts"); do
-    status=$(curl -s -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+    # --max-time bounds a single request so a hanging/slow backend can't
+    # silently inflate one "attempt" well past the delay_seconds you asked
+    # for between attempts - without it curl will wait as long as the
+    # server (or Azure's front end) takes to respond, which during a real
+    # container failure can be much longer than you'd expect from the log.
+    status=$(curl -s --max-time 15 -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
     body=$(cat "$body_file" 2>/dev/null)
 
     is_healthy="false"

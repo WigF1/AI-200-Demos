@@ -12,9 +12,14 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "NOTE: avoid running other scripts against this app (e.g. 03-verify-troubleshoot.ps1)"
-Write-Host "while this is running. Any config change triggers its own automatic restart, and a"
-Write-Host "concurrent restart can race this one and produce misleading results."
+Write-Host "NOTE: this uses 'az webapp stop' + 'az webapp start' rather than 'az webapp restart'."
+Write-Host "Testing showed 'restart' doesn't reliably tear down the container that's already"
+Write-Host "serving traffic - a new (broken) container can fail behind the scenes while Azure"
+Write-Host "keeps the old one alive and answering requests, making the app LOOK unaffected."
+Write-Host "A full stop guarantees nothing is left running before the bad config is applied."
+Write-Host "Also avoid running other scripts against this app (e.g. 03-verify-troubleshoot.ps1)"
+Write-Host "while this is running - any config change triggers its own restart, which can still"
+Write-Host "race this one."
 Write-Host ""
 
 $HostName = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostName -o tsv
@@ -27,7 +32,8 @@ Write-Host ""
 Write-Host "== Break it: point WEBSITES_PORT at a port the container isn't listening on =="
 az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppName `
   --settings WEBSITES_PORT=9999 --output none
-az webapp restart --resource-group $ResourceGroup --name $WebAppName
+az webapp stop --resource-group $ResourceGroup --name $WebAppName
+az webapp start --resource-group $ResourceGroup --name $WebAppName
 
 # Self-check: confirm the setting actually stuck before trusting the health
 # poll below. If something else (another script, a concurrent restart)
@@ -54,7 +60,8 @@ Write-Host ""
 Write-Host "== Fix it: restore the correct port =="
 az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppName `
   --settings WEBSITES_PORT=8000 --output none
-az webapp restart --resource-group $ResourceGroup --name $WebAppName
+az webapp stop --resource-group $ResourceGroup --name $WebAppName
+az webapp start --resource-group $ResourceGroup --name $WebAppName
 
 Write-Host "== Confirm it recovered =="
 Wait-ForAppHealth -Url $HealthUrl -ExpectHealthy $true | Out-Null
