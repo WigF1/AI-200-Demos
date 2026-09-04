@@ -27,3 +27,5 @@ kubectl rollout status deployment/inference-api -n $Namespace --timeout=120s
 
 $Pod = kubectl get pods -n $Namespace -l app=inference-api -o jsonpath='{.items[0].metadata.name}'
 kubectl exec $Pod -n $Namespace -- python -c "import urllib.request,json; print(json.load(urllib.request.urlopen('http://localhost:8000/config')))"
+
+Write-ElapsedTime

@@ -47,3 +47,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (nothing to purge)" }
 Write-Host ""
 Write-Host "Done. Left in place: resource group '$ResourceGroup' and ACR '$AcrName' (owned by LP01/M01)."
 Write-Host "To remove everything for LP01, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

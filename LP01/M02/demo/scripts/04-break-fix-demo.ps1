@@ -73,3 +73,5 @@ az webapp start --resource-group $ResourceGroup --name $WebAppName
 
 Write-Host "== Confirm it recovered =="
 Wait-ForAppHealth -Url $HealthUrl -ExpectHealthy $true | Out-Null
+
+Write-ElapsedTime

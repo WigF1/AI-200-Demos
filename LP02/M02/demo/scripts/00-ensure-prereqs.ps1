@@ -35,9 +35,11 @@ if ($EnvState -eq "Succeeded") {
         az containerapp env delete --name $AcaEnv --resource-group $ResourceGroup --yes
     }
     Write-Host "Creating Container Apps environment (can take several minutes; if this fails with a ManagedCluster/provisioning error, it's an Azure-side issue - re-running will clean up and retry)"
-    az containerapp env create `
-      --name $AcaEnv --resource-group $ResourceGroup --location $Location `
-      --logs-workspace-id $LawId --logs-workspace-key $LawKey --output table
+    Invoke-TimedStep "Container Apps environment create" {
+        az containerapp env create `
+          --name $AcaEnv --resource-group $ResourceGroup --location $Location `
+          --logs-workspace-id $LawId --logs-workspace-key $LawKey --output table
+    }
 }
 
 az acr show --name $AcrName --resource-group $ResourceGroup --output none 2>$null
@@ -49,7 +51,9 @@ if ($LASTEXITCODE -eq 0) {
 
 az acr repository show --name $AcrName --image "${ImageName}:${ImageTag}" --output none 2>$null
 if ($LASTEXITCODE -ne 0) {
-    az acr build --registry $AcrName --image "${ImageName}:${ImageTag}" --file "$AppDir/Dockerfile" $AppDir
+    Invoke-TimedStep "ACR build" {
+        az acr build --registry $AcrName --image "${ImageName}:${ImageTag}" --file "$AppDir/Dockerfile" $AppDir
+    }
 }
 
 az containerapp show --name $AcaApp --resource-group $ResourceGroup --output none 2>$null

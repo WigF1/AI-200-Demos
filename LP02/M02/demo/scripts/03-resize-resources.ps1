@@ -18,3 +18,5 @@ az containerapp show --name $AcaApp --resource-group $ResourceGroup `
 $Fqdn = az containerapp show --name $AcaApp --resource-group $ResourceGroup --query properties.configuration.ingress.fqdn --output tsv
 Write-Host "== Confirm the app is still healthy on the new resource sizing =="
 Wait-ForAppHealth -Url "https://$Fqdn/health" -ExpectHealthy $true | Out-Null
+
+Write-ElapsedTime

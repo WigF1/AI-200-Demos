@@ -15,3 +15,5 @@ az containerapp update --name $AcaApp --resource-group $ResourceGroup `
   --scale-rule-metadata "queueName=$ServiceBusQueue" "namespace=$ServiceBusNamespace" "messageCount=5" `
   --scale-rule-auth "connection=servicebus-connection" `
   --output table
+
+Write-ElapsedTime

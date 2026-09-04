@@ -46,7 +46,8 @@ else
   echo "== Creating Container Apps environment (can take several minutes; if this fails with a"
   echo "   ManagedCluster/provisioning error, it's an Azure-side issue - re-running this script"
   echo "   will clean up the failed attempt and retry) =="
-  az containerapp env create \
+  time_step "Container Apps environment create" \
+    az containerapp env create \
     --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --logs-workspace-id "$LAW_ID" --logs-workspace-key "$LAW_KEY" \
     --output table
@@ -62,6 +63,7 @@ fi
 if az acr repository show --name "$ACR_NAME" --image "${IMAGE_NAME}:${IMAGE_TAG}" --output none 2>/dev/null; then
   echo "Image '${IMAGE_NAME}:${IMAGE_TAG}' already in '$ACR_NAME'."
 else
-  az acr build --registry "$ACR_NAME" \
+  time_step "ACR build" \
+    az acr build --registry "$ACR_NAME" \
     --image "${IMAGE_NAME}:${IMAGE_TAG}" --file "${APP_DIR}/Dockerfile" "$APP_DIR"
 fi

@@ -41,3 +41,5 @@ for ($i = 1; $i -le 30; $i++) {
 Write-Host "canary (v2-canary): $CanaryHits/30 requests (~$([math]::Round($CanaryHits * 100 / 30))%, configured 20%)"
 Write-Host "other:               $OtherHits/30 requests (~$([math]::Round($OtherHits * 100 / 30))%, configured 80%)"
 Write-Host "(small sample - expect noise around the configured weights, not an exact match)"
+
+Write-ElapsedTime

@@ -8,3 +8,5 @@ az acr build --registry $AcrName `
   --file "$AppDir/Dockerfile" $AppDir
 
 az acr repository show-tags --name $AcrName --repository $ImageName --output table
+
+Write-ElapsedTime

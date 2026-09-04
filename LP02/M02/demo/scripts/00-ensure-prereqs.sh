@@ -37,7 +37,8 @@ else
   fi
   echo "Creating Container Apps environment (can take several minutes; if this fails with a"
   echo "ManagedCluster/provisioning error, it's an Azure-side issue - re-running will clean up and retry)"
-  az containerapp env create \
+  time_step "Container Apps environment create" \
+    az containerapp env create \
     --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --logs-workspace-id "$LAW_ID" --logs-workspace-key "$LAW_KEY" --output table
 fi
@@ -50,7 +51,8 @@ else
 fi
 
 if ! az acr repository show --name "$ACR_NAME" --image "${IMAGE_NAME}:${IMAGE_TAG}" --output none 2>/dev/null; then
-  az acr build --registry "$ACR_NAME" --image "${IMAGE_NAME}:${IMAGE_TAG}" \
+  time_step "ACR build" \
+    az acr build --registry "$ACR_NAME" --image "${IMAGE_NAME}:${IMAGE_TAG}" \
     --file "${APP_DIR}/Dockerfile" "$APP_DIR"
 fi
 

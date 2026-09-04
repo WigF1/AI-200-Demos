@@ -11,3 +11,5 @@ kubectl set env deployment/inference-api -n $Namespace FORCE_CRASH_DEMO- 2>$null
 Write-Host ""
 Write-Host "Done. Left in place: AKS cluster, ACR, namespace, and deployments."
 Write-Host "To remove everything for LP03, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

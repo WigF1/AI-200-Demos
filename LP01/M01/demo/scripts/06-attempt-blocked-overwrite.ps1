@@ -53,3 +53,5 @@ Write-Host "== Re-lock it, since 03-tag-version-lock.ps1's whole point was produ
 az acr repository update --name $AcrName --image "${ImageName}:${ImageTag}" --write-enabled false
 az acr repository show --name $AcrName --image "${ImageName}:${ImageTag}" `
   --query "changeableAttributes" --output json
+
+Write-ElapsedTime

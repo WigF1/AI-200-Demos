@@ -17,3 +17,5 @@ kubectl describe pod $Pod -n $Namespace | Select-Object -Last 30
 Write-Host "== Fix =="
 kubectl set env deployment/inference-api -n $Namespace FORCE_CRASH_DEMO-
 kubectl rollout status deployment/inference-api -n $Namespace --timeout=120s
+
+Write-ElapsedTime

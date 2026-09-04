@@ -14,7 +14,10 @@ PF_PID=$!
 # Always kill the port-forward on exit, even if curl below fails - without
 # this, a failed curl under set -e would abort the script and leave the
 # port-forward process orphaned in the background.
-trap 'kill "$PF_PID" 2>/dev/null || true' EXIT
+# Chained with print_elapsed (not a second trap - bash only keeps the
+# last one set, which would otherwise silently drop the elapsed-time
+# print from 00-vars.sh's trap).
+trap 'kill "$PF_PID" 2>/dev/null || true; print_elapsed' EXIT
 sleep 3
 curl -sf --max-time 10 http://localhost:8080/health && echo || echo "  (port-forward may not have been ready yet)" >&2
 

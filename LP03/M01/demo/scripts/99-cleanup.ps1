@@ -14,3 +14,5 @@ Write-Host ""
 Write-Host "AKS deletion was started with --no-wait - it'll finish in the background."
 Write-Host "Resource group '$ResourceGroup' itself was left in place."
 Write-Host "To remove it too (and not wait on the AKS deletion first), run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

@@ -29,7 +29,8 @@ if az aks show --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --output
   echo "AKS cluster '$AKS_CLUSTER' already exists."
 else
   echo "AKS cluster '$AKS_CLUSTER' not found - creating (LP03/M01 likely hasn't run; this takes 5-10 minutes)..."
-  az aks create \
+  time_step "AKS cluster create" \
+    az aks create \
     --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" \
     --node-count 2 --node-vm-size Standard_B2s \
     --generate-ssh-keys \

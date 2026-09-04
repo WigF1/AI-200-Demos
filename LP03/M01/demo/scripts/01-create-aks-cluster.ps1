@@ -26,12 +26,14 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "AKS cluster '$AksCluster' already exists."
 } else {
     Write-Host "== Create a small AKS cluster (2 nodes, B2s) for the demo - this takes 5-10 minutes =="
-    az aks create `
-      --resource-group $ResourceGroup --name $AksCluster `
-      --node-count 2 --node-vm-size Standard_B2s `
-      --generate-ssh-keys `
-      --attach-acr $AcrName `
-      --output table
+    Invoke-TimedStep "AKS cluster create" {
+        az aks create `
+          --resource-group $ResourceGroup --name $AksCluster `
+          --node-count 2 --node-vm-size Standard_B2s `
+          --generate-ssh-keys `
+          --attach-acr $AcrName `
+          --output table
+    }
 }
 
 az aks get-credentials --resource-group $ResourceGroup --name $AksCluster --overwrite-existing
@@ -40,3 +42,5 @@ Write-Host "== ACR login server to substitute into the manifests =="
 az acr show --name $AcrName --query loginServer --output tsv
 
 kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f -
+
+Write-ElapsedTime

@@ -35,3 +35,5 @@ for ($attempt = 1; $attempt -le 12; $attempt++) {
     Start-Sleep -Seconds 10
 }
 kubectl get svc inference-api-external -n $Namespace
+
+Write-ElapsedTime

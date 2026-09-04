@@ -23,3 +23,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (no ACR found)" }
 Write-Host ""
 Write-Host "Done. Resource group '$ResourceGroup' itself was left in place."
 Write-Host "To remove it too, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

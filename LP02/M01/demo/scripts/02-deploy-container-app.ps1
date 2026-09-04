@@ -50,3 +50,5 @@ Write-Host "== Verifying the app comes up healthy =="
 if (-not (Wait-ForAppHealth -Url "https://$Fqdn/health" -ExpectHealthy $true)) {
     Write-Warning "Still not healthy - check: az containerapp logs show -n $AcaApp -g $ResourceGroup --follow"
 }
+
+Write-ElapsedTime

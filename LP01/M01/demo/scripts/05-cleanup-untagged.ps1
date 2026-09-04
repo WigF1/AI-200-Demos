@@ -52,3 +52,5 @@ Write-Host "== Untagged manifests after purge =="
 $AfterCount = az acr manifest list-metadata --registry $AcrName --name $ImageName `
   --query "length([?tags==null || length(tags)==``0``])" --output tsv
 Write-Host "Untagged manifest count: $AfterCount (was $BeforeCount)"
+
+Write-ElapsedTime

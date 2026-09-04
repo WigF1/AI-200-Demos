@@ -83,3 +83,5 @@ Write-Host "== Lifecycle action: reactivate (broader than deactivate - clears th
 az containerapp revision activate --revision $LatestRevision --resource-group $ResourceGroup --output none
 Write-Host "== Confirm the app is reachable again =="
 Wait-ForAppHealth -Url "https://$Fqdn/health" -ExpectHealthy $true | Out-Null
+
+Write-ElapsedTime

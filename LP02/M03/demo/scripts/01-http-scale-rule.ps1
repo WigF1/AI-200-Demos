@@ -11,3 +11,5 @@ az containerapp update --name $AcaApp --resource-group $ResourceGroup `
   --output table
 
 az containerapp show --name $AcaApp --resource-group $ResourceGroup --query "properties.template.scale" --output json
+
+Write-ElapsedTime

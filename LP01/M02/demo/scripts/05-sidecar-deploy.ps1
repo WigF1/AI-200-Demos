@@ -147,3 +147,5 @@ Talk track:
       az webapp sitecontainers delete --name $WebAppName -g $ResourceGroup --container-name $SidecarName
       az webapp sitecontainers convert --name $WebAppName -g $ResourceGroup --mode docker --yes
 "@
+
+Write-ElapsedTime

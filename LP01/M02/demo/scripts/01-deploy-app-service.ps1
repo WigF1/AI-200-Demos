@@ -50,3 +50,5 @@ Write-Host "== Verifying the app comes up healthy: $HealthUrl =="
 if (-not (Wait-ForAppHealth -Url $HealthUrl -ExpectHealthy $true)) {
     Write-Warning "Still not healthy - check logs: az webapp log tail -g $ResourceGroup -n $WebAppName"
 }
+
+Write-ElapsedTime

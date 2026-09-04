@@ -45,9 +45,11 @@ if ($EnvState -eq "Succeeded") {
     Write-Host "== Creating Container Apps environment (can take several minutes; if this fails with a"
     Write-Host "   ManagedCluster/provisioning error, it's an Azure-side issue - re-running this script"
     Write-Host "   will clean up the failed attempt and retry) =="
-    az containerapp env create `
-      --name $AcaEnv --resource-group $ResourceGroup --location $Location `
-      --logs-workspace-id $LawId --logs-workspace-key $LawKey --output table
+    Invoke-TimedStep "Container Apps environment create" {
+        az containerapp env create `
+          --name $AcaEnv --resource-group $ResourceGroup --location $Location `
+          --logs-workspace-id $LawId --logs-workspace-key $LawKey --output table
+    }
 }
 
 az acr show --name $AcrName --resource-group $ResourceGroup --output none 2>$null
@@ -61,5 +63,9 @@ az acr repository show --name $AcrName --image "${ImageName}:${ImageTag}" --outp
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Image '${ImageName}:${ImageTag}' already in '$AcrName'."
 } else {
-    az acr build --registry $AcrName --image "${ImageName}:${ImageTag}" --file "$AppDir/Dockerfile" $AppDir
+    Invoke-TimedStep "ACR build" {
+        az acr build --registry $AcrName --image "${ImageName}:${ImageTag}" --file "$AppDir/Dockerfile" $AppDir
+    }
 }
+
+Write-ElapsedTime

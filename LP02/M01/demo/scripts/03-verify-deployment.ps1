@@ -13,3 +13,5 @@ az containerapp revision list --name $AcaApp --resource-group $ResourceGroup `
 Write-Host "== Replicas for the current revision =="
 $LatestRevision = az containerapp revision list --name $AcaApp --resource-group $ResourceGroup --query "[0].name" --output tsv
 az containerapp replica list --name $AcaApp --resource-group $ResourceGroup --revision $LatestRevision --output table
+
+Write-ElapsedTime

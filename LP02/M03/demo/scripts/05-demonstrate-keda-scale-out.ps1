@@ -63,3 +63,5 @@ Write-Host ""
 Write-Host "== Final state =="
 az containerapp replica list --name $AcaApp --resource-group $ResourceGroup --output table
 Write-Host "Once the queue drains and the cooldown period passes, replicas scale back to 0."
+
+Write-ElapsedTime

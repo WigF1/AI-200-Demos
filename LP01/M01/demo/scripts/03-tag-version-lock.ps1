@@ -11,3 +11,5 @@ Write-Host "By digest: $LoginServer/${ImageName}@$Digest"
 az acr repository update --name $AcrName --image "${ImageName}:${ImageTag}" --write-enabled false
 az acr repository show --name $AcrName --image "${ImageName}:${ImageTag}" `
   --query "{name:name, changeableAttributes:changeableAttributes}" --output json
+
+Write-ElapsedTime

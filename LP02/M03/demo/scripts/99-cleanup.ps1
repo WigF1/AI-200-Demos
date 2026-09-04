@@ -18,3 +18,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (no Service Bus namespace found)" }
 Write-Host ""
 Write-Host "Done. Left in place: resource group '$ResourceGroup', container app, environment, ACR."
 Write-Host "To remove everything for LP02, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

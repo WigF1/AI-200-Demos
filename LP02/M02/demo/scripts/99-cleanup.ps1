@@ -13,3 +13,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (no container app found)" }
 Write-Host ""
 Write-Host "Done. Left in place: resource group '$ResourceGroup', Container Apps environment, ACR, and image."
 Write-Host "To remove everything for LP02, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

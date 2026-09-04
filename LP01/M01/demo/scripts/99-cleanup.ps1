@@ -28,3 +28,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (v1 tag not found or already unlocked)"
 Write-Host ""
 Write-Host "Done. Left in place (still needed by LP01/M02): resource group '$ResourceGroup', ACR '$AcrName', image '${ImageName}:${ImageTag}'."
 Write-Host "To remove everything for LP01, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime

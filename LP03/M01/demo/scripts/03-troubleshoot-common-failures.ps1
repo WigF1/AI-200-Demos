@@ -23,3 +23,5 @@ kubectl describe svc inference-api-external -n $Namespace
 Write-Host "== Fix =="
 kubectl patch svc inference-api-external -n $Namespace -p '{\"spec\":{\"selector\":{\"app\":\"inference-api\"}}}'
 kubectl get endpoints inference-api-external -n $Namespace
+
+Write-ElapsedTime

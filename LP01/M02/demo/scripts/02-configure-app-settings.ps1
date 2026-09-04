@@ -97,3 +97,5 @@ try {
 } catch {
     Write-Host "  (app may still be restarting - retry manually: curl https://$Host2/config)"
 }
+
+Write-ElapsedTime

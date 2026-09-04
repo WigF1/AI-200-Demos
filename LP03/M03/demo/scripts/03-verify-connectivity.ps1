@@ -25,3 +25,5 @@ try {
 
 Write-Host "== External LoadBalancer address =="
 kubectl get svc inference-api-external -n $Namespace
+
+Write-ElapsedTime

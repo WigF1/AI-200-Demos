@@ -32,3 +32,5 @@ Write-Host "For a live break/fix walkthrough (bad WEBSITES_PORT -> observe failu
 Write-Host "Tailing logs now (Ctrl+C to stop) ..."
 
 az webapp log tail --resource-group $ResourceGroup --name $WebAppName
+
+Write-ElapsedTime

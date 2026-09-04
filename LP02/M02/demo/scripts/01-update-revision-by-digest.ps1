@@ -16,3 +16,5 @@ az containerapp update --name $AcaApp --resource-group $ResourceGroup --image $I
 
 az containerapp revision list --name $AcaApp --resource-group $ResourceGroup `
   --query "[].{name:name, active:properties.active, healthState:properties.healthState}" --output table
+
+Write-ElapsedTime

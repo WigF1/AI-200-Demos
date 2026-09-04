@@ -47,3 +47,5 @@ Write-Host ""
 Write-Host "== Final replica list =="
 az containerapp replica list --name $AcaApp --resource-group $ResourceGroup --output table
 Write-Host "Replicas will scale back down on their own after the cooldown period (no traffic)."
+
+Write-ElapsedTime

@@ -33,3 +33,5 @@ az acr manifest list-metadata --registry $AcrName --name $ImageName `
 
 Write-Host ""
 Write-Host "Seed complete. Run ./05-cleanup-untagged.ps1 to purge these."
+
+Write-ElapsedTime

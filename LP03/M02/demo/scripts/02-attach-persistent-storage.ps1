@@ -26,3 +26,5 @@ kubectl rollout status deployment/inference-api -n $Namespace --timeout=120s
 $NewPod = kubectl get pods -n $Namespace -l app=inference-api -o jsonpath='{.items[0].metadata.name}'
 Write-Host "New pod: $NewPod -- reading the same file back:"
 kubectl exec $NewPod -n $Namespace -- cat /data/test.txt
+
+Write-ElapsedTime

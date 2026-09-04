@@ -16,3 +16,5 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  (no PVC found)" }
 Write-Host ""
 Write-Host "Done. Left in place: AKS cluster, ACR, namespace, and the base deployment/services."
 Write-Host "To remove everything for LP03, run: ../../../99-cleanup-all.ps1"
+
+Write-ElapsedTime
