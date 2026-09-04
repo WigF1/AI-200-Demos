@@ -54,6 +54,14 @@ Write-Host "== Confirm it's actually broken =="
 # is failing to start, so this can take a couple of minutes AND needs the
 # body-aware check above - a plain status-code check would report "fine"
 # the entire time because the placeholder page is also a 200.
+#
+# You'll likely see HTTP 403 here, not a 5xx - that's correct, not a bug.
+# While the site is in the stopped state (from az webapp stop above),
+# App Service's front end returns "403 - This web app is stopped" to
+# every request. That's actually a more definitive "confirmed down"
+# signal than racing a 5xx against container startup timing, since 403
+# unambiguously means "explicitly disabled" rather than "up but the
+# backend failed."
 Wait-ForAppHealth -Url $HealthUrl -ExpectHealthy $false -MaxAttempts 18 -DelaySeconds 10 | Out-Null
 
 Write-Host ""
