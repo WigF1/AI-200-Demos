@@ -11,8 +11,14 @@ set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
 
 echo "== Removing the sidecar (if present) and reverting to single-container mode =="
+# Cleans up both the current sidecar name and "log-forwarder" (the name
+# used before the sidecar image and container name were changed - see
+# 05-sidecar-deploy.sh), so an environment from before that change doesn't
+# end up with an orphaned container this script doesn't know to remove.
 az webapp sitecontainers delete --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
-  --container-name log-forwarder 2>/dev/null || echo "  (no sidecar found)"
+  --container-name "$SIDECAR_NAME" 2>/dev/null || echo "  (no sidecar named '$SIDECAR_NAME' found)"
+az webapp sitecontainers delete --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+  --container-name log-forwarder 2>/dev/null || echo "  (no legacy 'log-forwarder' sidecar found)"
 # --yes suppresses the interactive confirmation prompt this command shows
 # by default - without it, a cleanup script can hang indefinitely waiting
 # on stdin for a prompt it never shows you (see 05-sidecar-deploy.sh).

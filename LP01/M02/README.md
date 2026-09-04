@@ -37,7 +37,7 @@ run `99-cleanup.sh` promptly when you're done for the day.
 | `02-configure-app-settings` | Slide 18: app settings, Key Vault reference, deployment slot + slot setting; grants the caller (you) Key Vault Secrets Officer before writing the secret (RBAC-mode vaults don't grant the creator any data-plane rights), then grants the web app's identity Key Vault Secrets User and confirms the reference actually resolves |
 | `03-verify-troubleshoot` | Slide 19: log stream, health check, Kudu links |
 | `04-break-fix-demo` | Slide 19: live break/fix walkthrough — actually breaks `WEBSITES_PORT`, confirms the failure, fixes it, confirms recovery |
-| `05-sidecar-deploy` | Lab 03: add a sidecar container (log-forwarder style) alongside the main app container; confirms the main app still serves traffic afterward |
+| `05-sidecar-deploy` | Lab 03: add a sidecar container (`demo-sidecar`, a dependency-free static-site image) alongside the main app container; checks sidecar-specific status/logs (not `log tail`, which only sees the main container) and confirms the main app still serves traffic afterward |
 | `99-cleanup` | Removes what this module created (web app, plan, Key Vault, sidecar, slot); leaves the resource group + ACR from `M01` in place |
 
 ## Run it

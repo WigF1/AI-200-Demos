@@ -10,9 +10,16 @@ Set-Location $PSScriptRoot
 . ./00-vars.ps1
 
 Write-Host "== Removing the sidecar (if present) and reverting to single-container mode =="
+# Cleans up both the current sidecar name and "log-forwarder" (the name
+# used before the sidecar image and container name were changed - see
+# 05-sidecar-deploy.ps1), so an environment from before that change doesn't
+# end up with an orphaned container this script doesn't know to remove.
+az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
+  --container-name $SidecarName 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Host "  (no sidecar named '$SidecarName' found)" }
 az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
   --container-name log-forwarder 2>$null
-if ($LASTEXITCODE -ne 0) { Write-Host "  (no sidecar found)" }
+if ($LASTEXITCODE -ne 0) { Write-Host "  (no legacy 'log-forwarder' sidecar found)" }
 # --yes suppresses the interactive confirmation prompt this command shows
 # by default - without it, a cleanup script can hang indefinitely waiting
 # on stdin for a prompt it never shows you (see 05-sidecar-deploy.ps1).

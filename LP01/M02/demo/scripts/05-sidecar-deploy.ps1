@@ -19,30 +19,44 @@ Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers --yes
 if ($LASTEXITCODE -ne 0) { Write-Host "  (already in sitecontainers mode, or nothing to convert - see any error above)" }
 
-Write-Host "== Write a spec file for a small public 'sidecar' image (this exact image is Microsoft's own public-registry example for sitecontainers) =="
+Write-Host "== Write a spec file for a small public sidecar image =="
 # Schema confirmed against: az webapp sitecontainers create --help (top-level
-# "name" + "properties" wrapper) and Microsoft's own tutorial-sidecar.md tip
-# for using a public image, which uses this exact image path with this exact
-# properties shape. Two mistakes an earlier version of this script had:
-# "containerName" instead of "name" at the top level, and all the container
-# fields sitting flat at the top level instead of nested under "properties" -
-# both caused "Failed to create or update sitecontainer None. Error: No
-# value for given attribute" (the "None" was the never-found name).
+# "name" + "properties" wrapper).
+#
+# Image: this used to be mcr.microsoft.com/appsvc/docs/sidecars/sample-
+# experiment:otel-appinsights-1.0 (also from Microsoft's own docs, as a
+# "public image" schema example) - but that image is a real OpenTelemetry
+# Collector pre-configured to export to Azure Monitor, and it refuses to
+# start at all without an Application Insights connection string:
+#   Error: failed to build pipelines: failed to create "azuremonitor"
+#   exporter for data type "logs": ConnectionString and InstrumentationKey
+#   cannot be empty
+# It crash-looped (confirmed via `az webapp sitecontainers status`:
+# Status=Terminated, ExitCode=1, RunCount=3) and appeared to take the
+# whole site down with it, not just itself - main + sidecars share one
+# site-unit lifecycle, so a crash-looping sidecar can make the otherwise-
+# healthy main container unreachable too.
+#
+# mcr.microsoft.com/appsvc/staticsite:latest is Microsoft's OTHER public-
+# image example from the same docs, used there as a full isMain
+# replacement - a plain static web server with no external dependencies,
+# nothing to crash on.
 $specPath = "$env:TEMP\sidecar-spec.json"
-$spec = @'
+$spec = @"
 [
   {
-    "name": "log-forwarder",
+    "name": "$SidecarName",
     "properties": {
-      "image": "mcr.microsoft.com/appsvc/docs/sidecars/sample-experiment:otel-appinsights-1.0",
+      "image": "mcr.microsoft.com/appsvc/staticsite:latest",
       "isMain": false,
       "authType": "Anonymous",
+      "targetPort": "80",
       "volumeMounts": [],
       "environmentVariables": []
     }
   }
 ]
-'@
+"@
 Set-Content -Path $specPath -Value $spec
 
 # az webapp sitecontainers create isn't idempotent either - it has a
@@ -50,11 +64,11 @@ Set-Content -Path $specPath -Value $spec
 # delete the sidecar first if it's already there, then create fresh from
 # the spec file.
 az webapp sitecontainers show --name $WebAppName --resource-group $ResourceGroup `
-  --container-name log-forwarder --output none 2>$null
+  --container-name $SidecarName --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "Sidecar 'log-forwarder' already exists - removing so it can be recreated cleanly from the spec file."
+    Write-Host "Sidecar '$SidecarName' already exists - removing so it can be recreated cleanly from the spec file."
     az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
-      --container-name log-forwarder --output none
+      --container-name $SidecarName --output none
 }
 
 Write-Host "== Add the sidecar alongside the existing main container =="
@@ -76,25 +90,32 @@ Write-Host "== Sidecar status (this is what actually answers 'did it start?' - a
 # Not filtering with --query here: the exact field name in this command's
 # JSON output isn't confirmed against documentation (no example schema
 # available), so showing the full object is the honest choice rather than
-# guessing a field name that might not exist.
+# guessing a field name that might not exist. Look for "Status": "Running"
+# - "Terminated" with a non-zero ExitCode means it crashed, same as the
+# OTel image above did.
 Start-Sleep -Seconds 10
 az webapp sitecontainers status --name $WebAppName --resource-group $ResourceGroup `
-  --container-name log-forwarder --output json
+  --container-name $SidecarName --output json
 if ($LASTEXITCODE -ne 0) { Write-Host "  (status not available yet - try again in a few seconds)" }
 
 Write-Host ""
 Write-Host "== Sidecar's own startup logs (the container-specific equivalent of 'log tail') =="
-az webapp sitecontainers log --name $WebAppName --resource-group $ResourceGroup --container-name log-forwarder
-if ($LASTEXITCODE -ne 0) { Write-Host "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WebAppName -g $ResourceGroup --container-name log-forwarder)" }
+az webapp sitecontainers log --name $WebAppName --resource-group $ResourceGroup --container-name $SidecarName
+if ($LASTEXITCODE -ne 0) { Write-Host "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WebAppName -g $ResourceGroup --container-name $SidecarName)" }
 
 Write-Host @"
 
 Talk track:
-  - Main + sidecar share localhost. A sidecar on port 4318 is reachable
-    from the main app at localhost:4318, no extra networking config.
+  - Main ("main") + sidecar ("$SidecarName") share localhost. This
+    sidecar listens on port 80, so the main app could reach it at
+    localhost:80 without any extra networking config.
   - App Service only routes external traffic to the isMain=true container.
   - Up to 9 sidecars are supported per Linux app.
+  - A crash-looping sidecar can take the whole site down, not just
+    itself - main + sidecars share one site-unit lifecycle. Always
+    check "az webapp sitecontainers status" for a new sidecar image
+    before assuming a main-app outage is unrelated to it.
   - Roll back:
-      az webapp sitecontainers delete --name $WebAppName -g $ResourceGroup --container-name log-forwarder
+      az webapp sitecontainers delete --name $WebAppName -g $ResourceGroup --container-name $SidecarName
       az webapp sitecontainers convert --name $WebAppName -g $ResourceGroup --mode docker --yes
 "@

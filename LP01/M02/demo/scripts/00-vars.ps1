@@ -19,4 +19,7 @@ $WebAppSku = "P0V3"
 $StagingSlotName = "staging"
 $KeyVaultName = "kv-$Suffix"
 $KvSecretName = "model-api-key"
+# Used by 05-sidecar-deploy.ps1 and 99-cleanup.ps1 - kept in one place so
+# both always agree on the container name.
+$SidecarName = "demo-sidecar"
 Write-Host "ResourceGroup=$ResourceGroup  WebAppName=$WebAppName  AcrName=$AcrName"

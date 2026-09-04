@@ -20,4 +20,7 @@ WEBAPP_SKU="P0V3"
 STAGING_SLOT_NAME="staging"
 KEYVAULT_NAME="kv-${SUFFIX}"
 KV_SECRET_NAME="model-api-key"
+# Used by 05-sidecar-deploy.sh and 99-cleanup.sh - kept in one place so
+# both always agree on the container name.
+SIDECAR_NAME="demo-sidecar"
 echo "RESOURCE_GROUP=$RESOURCE_GROUP  WEBAPP_NAME=$WEBAPP_NAME  ACR_NAME=$ACR_NAME"
