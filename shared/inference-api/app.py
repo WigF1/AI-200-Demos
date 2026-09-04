@@ -45,6 +45,25 @@ if os.environ.get("FORCE_CRASH_DEMO", "").lower() == "true":
     sys.exit(1)
 
 
+@app.get("/")
+def index():
+    """
+    Landing page so hitting the bare hostname/IP - which is what most
+    people try first - doesn't just 404. Lists the demo endpoints rather
+    than doing anything itself.
+    """
+    return jsonify(
+        service="inference-api",
+        imageVersion=IMAGE_VERSION,
+        uptimeSeconds=round(time.time() - START_TIME, 1),
+        endpoints={
+            "GET /health": "liveness/readiness check",
+            "GET /config": "shows which app settings/secrets/Key Vault references actually reached this container",
+            "POST /classify": 'fake inference call - body: {"text": "..."}',
+        },
+    )
+
+
 @app.get("/health")
 def health():
     """App Service health check target: Slide 17, Module 2."""

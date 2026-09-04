@@ -14,6 +14,15 @@ def client():
     return app.test_client()
 
 
+def test_index():
+    c = client()
+    resp = c.get("/")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["service"] == "inference-api"
+    assert "GET /health" in body["endpoints"]
+
+
 def test_health():
     c = client()
     resp = c.get("/health")
