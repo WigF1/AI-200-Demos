@@ -81,8 +81,19 @@ HOSTNAME=$(az webapp show -g "$RESOURCE_GROUP" -n "$WEBAPP_NAME" --query default
 wait_for_app_health "https://${HOSTNAME}/health" true || true
 
 echo
-echo "== Streaming logs for 15s to catch the sidecar's startup lines =="
-timeout 15 az webapp log tail --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" || true
+echo "== Sidecar status (this is what actually answers 'did it start?' - az webapp log tail only streams the MAIN container's logs, never a sidecar's) =="
+# Not filtering with --query here: the exact field name in this command's
+# JSON output isn't confirmed against documentation (no example schema
+# available), so showing the full object is the honest choice rather than
+# guessing a field name that might not exist.
+sleep 10
+az webapp sitecontainers status --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+  --container-name log-forwarder --output json || echo "  (status not available yet - try again in a few seconds)"
+
+echo
+echo "== Sidecar's own startup logs (the container-specific equivalent of 'log tail') =="
+az webapp sitecontainers log --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
+  --container-name log-forwarder || echo "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WEBAPP_NAME -g $RESOURCE_GROUP --container-name log-forwarder)"
 
 cat <<'TXT'
 

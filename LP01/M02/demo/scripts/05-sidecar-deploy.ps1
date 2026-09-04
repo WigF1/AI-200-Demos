@@ -72,12 +72,20 @@ $HostName = az webapp show -g $ResourceGroup -n $WebAppName --query defaultHostN
 Wait-ForAppHealth -Url "https://$HostName/health" -ExpectHealthy $true | Out-Null
 
 Write-Host ""
-Write-Host "== Streaming logs for 15s to catch the sidecar's startup lines =="
-$logJob = Start-Job -ScriptBlock { az webapp log tail --resource-group $using:ResourceGroup --name $using:WebAppName }
-Start-Sleep -Seconds 15
-Receive-Job -Job $logJob
-Stop-Job -Job $logJob | Out-Null
-Remove-Job -Job $logJob | Out-Null
+Write-Host "== Sidecar status (this is what actually answers 'did it start?' - az webapp log tail only streams the MAIN container's logs, never a sidecar's) =="
+# Not filtering with --query here: the exact field name in this command's
+# JSON output isn't confirmed against documentation (no example schema
+# available), so showing the full object is the honest choice rather than
+# guessing a field name that might not exist.
+Start-Sleep -Seconds 10
+az webapp sitecontainers status --name $WebAppName --resource-group $ResourceGroup `
+  --container-name log-forwarder --output json
+if ($LASTEXITCODE -ne 0) { Write-Host "  (status not available yet - try again in a few seconds)" }
+
+Write-Host ""
+Write-Host "== Sidecar's own startup logs (the container-specific equivalent of 'log tail') =="
+az webapp sitecontainers log --name $WebAppName --resource-group $ResourceGroup --container-name log-forwarder
+if ($LASTEXITCODE -ne 0) { Write-Host "  (no logs yet - the sidecar may still be starting; re-run: az webapp sitecontainers log --name $WebAppName -g $ResourceGroup --container-name log-forwarder)" }
 
 Write-Host @"
 
