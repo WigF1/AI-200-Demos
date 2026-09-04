@@ -13,7 +13,10 @@ Write-Host "== Removing the sidecar (if present) and reverting to single-contain
 az webapp sitecontainers delete --name $WebAppName --resource-group $ResourceGroup `
   --container-name log-forwarder 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Host "  (no sidecar found)" }
-az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode docker 2>$null
+# --yes suppresses the interactive confirmation prompt this command shows
+# by default - without it, a cleanup script can hang indefinitely waiting
+# on stdin for a prompt it never shows you (see 05-sidecar-deploy.ps1).
+az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode docker --yes 2>$null
 
 Write-Host "== Deleting the staging slot =="
 az webapp deployment slot delete --resource-group $ResourceGroup --name $WebAppName `

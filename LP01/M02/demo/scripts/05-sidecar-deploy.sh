@@ -17,10 +17,14 @@ if ! az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" --o
 fi
 
 echo "== Convert the app to sidecar-enabled (sitecontainers) mode =="
+# --yes suppresses the interactive "are you sure?" confirmation prompt
+# this command shows by default. Without it, the prompt (along with any
+# way to see or answer it) was going to /dev/null while the command sat
+# waiting on stdin forever - looks like a hang, isn't actually one.
 az webapp sitecontainers convert \
   --name "$WEBAPP_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --mode sitecontainers 2>/dev/null || echo "  (already in sitecontainers mode, or nothing to convert)"
+  --mode sitecontainers --yes || echo "  (already in sitecontainers mode, or nothing to convert - see any error above)"
 
 echo "== Write a spec file for a small public 'sidecar' image (busybox log-tailer stand-in) =="
 cat > /tmp/sidecar-spec.json <<JSON
@@ -83,5 +87,5 @@ Talk track:
   - Up to 9 sidecars are supported per Linux app.
   - Roll back with:
       az webapp sitecontainers delete --name $WEBAPP_NAME -g $RESOURCE_GROUP --container-name log-forwarder
-      az webapp sitecontainers convert --name $WEBAPP_NAME -g $RESOURCE_GROUP --mode docker
+      az webapp sitecontainers convert --name $WEBAPP_NAME -g $RESOURCE_GROUP --mode docker --yes
 TXT

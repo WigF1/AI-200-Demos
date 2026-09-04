@@ -12,8 +12,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
-az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers 2>$null
-if ($LASTEXITCODE -ne 0) { Write-Host "  (already in sitecontainers mode, or nothing to convert)" }
+# --yes suppresses the interactive "are you sure?" confirmation prompt
+# this command shows by default. Without it, the prompt (along with any
+# way to see or answer it) was going to $null while the command sat
+# waiting on stdin forever - looks like a hang, isn't actually one.
+az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers --yes
+if ($LASTEXITCODE -ne 0) { Write-Host "  (already in sitecontainers mode, or nothing to convert - see any error above)" }
 
 Write-Host "== Write a spec file for a small sample sidecar image =="
 $specPath = "$env:TEMP\sidecar-spec.json"
@@ -76,5 +80,5 @@ Talk track:
   - Up to 9 sidecars are supported per Linux app.
   - Roll back:
       az webapp sitecontainers delete --name $WebAppName -g $ResourceGroup --container-name log-forwarder
-      az webapp sitecontainers convert --name $WebAppName -g $ResourceGroup --mode docker
+      az webapp sitecontainers convert --name $WebAppName -g $ResourceGroup --mode docker --yes
 "@

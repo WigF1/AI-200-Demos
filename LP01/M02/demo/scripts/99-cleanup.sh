@@ -13,8 +13,11 @@ cd "$(dirname "$0")"; source ./00-vars.sh
 echo "== Removing the sidecar (if present) and reverting to single-container mode =="
 az webapp sitecontainers delete --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
   --container-name log-forwarder 2>/dev/null || echo "  (no sidecar found)"
+# --yes suppresses the interactive confirmation prompt this command shows
+# by default - without it, a cleanup script can hang indefinitely waiting
+# on stdin for a prompt it never shows you (see 05-sidecar-deploy.sh).
 az webapp sitecontainers convert --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" \
-  --mode docker 2>/dev/null || true
+  --mode docker --yes || true
 
 echo "== Deleting the staging slot =="
 az webapp deployment slot delete --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME" \
