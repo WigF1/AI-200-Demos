@@ -2,6 +2,7 @@
 # Slide 26: key signals - latency/errors/restarts, kubectl logs + kubectl top.
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
 az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
 
 echo "== Pods and restart counts =="
@@ -12,4 +13,4 @@ echo "== Logs for $POD =="
 kubectl logs "$POD" -n "$NAMESPACE" --tail=50
 
 echo "== CPU/memory vs. requests/limits (needs metrics-server, enabled by default in AKS) =="
-kubectl top pods -n "$NAMESPACE"
+kubectl top pods -n "$NAMESPACE" || echo "  metrics not ready yet (metrics-server can take a few minutes after cluster creation) - try again shortly" >&2

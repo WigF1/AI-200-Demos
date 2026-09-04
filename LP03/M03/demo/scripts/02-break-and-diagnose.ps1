@@ -1,6 +1,8 @@
 # Slide 27, 30: force a CrashLoopBackOff, diagnose via describe + Events, fix.
 Set-Location $PSScriptRoot
 . ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
+az aks get-credentials --resource-group $ResourceGroup --name $AksCluster --overwrite-existing 2>$null
 
 Write-Host "== Break: FORCE_CRASH_DEMO=true makes the container exit on startup =="
 kubectl set env deployment/inference-api -n $Namespace FORCE_CRASH_DEMO=true
@@ -14,4 +16,4 @@ kubectl describe pod $Pod -n $Namespace | Select-Object -Last 30
 
 Write-Host "== Fix =="
 kubectl set env deployment/inference-api -n $Namespace FORCE_CRASH_DEMO-
-kubectl rollout status deployment/inference-api -n $Namespace
+kubectl rollout status deployment/inference-api -n $Namespace --timeout=120s

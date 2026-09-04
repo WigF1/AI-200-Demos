@@ -13,7 +13,7 @@ kubectl apply -n "$NAMESPACE" -f ../manifests/service-loadbalancer.yaml
 kubectl apply -n "$NAMESPACE" -f ../manifests/service-clusterip.yaml
 
 echo "== 1) Pod and Deployment status =="
-kubectl rollout status deployment/inference-api -n "$NAMESPACE"
+kubectl rollout status deployment/inference-api -n "$NAMESPACE" --timeout=120s || echo "  rollout did not complete within 120s - check: kubectl get pods -n $NAMESPACE" >&2
 kubectl get pods -n "$NAMESPACE" -l app=inference-api
 
 echo "== 2) Service exposure and endpoint assignment =="
@@ -24,5 +24,15 @@ echo "== 3) Logs (only after status/exposure look healthy) =="
 POD=$(kubectl get pods -n "$NAMESPACE" -l app=inference-api -o jsonpath='{.items[0].metadata.name}')
 kubectl logs "$POD" -n "$NAMESPACE" --tail=50
 
-echo "== External IP (may take a minute to provision) =="
-kubectl get svc inference-api-external -n "$NAMESPACE" -w
+echo "== External IP (waits up to 2 minutes for provisioning) =="
+for attempt in $(seq 1 12); do
+  EXTERNAL_IP=$(kubectl get svc inference-api-external -n "$NAMESPACE" \
+    -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+  if [ -n "$EXTERNAL_IP" ]; then
+    echo "External IP assigned: $EXTERNAL_IP"
+    break
+  fi
+  echo "  attempt ${attempt}: not yet assigned - retrying in 10s"
+  sleep 10
+done
+kubectl get svc inference-api-external -n "$NAMESPACE"

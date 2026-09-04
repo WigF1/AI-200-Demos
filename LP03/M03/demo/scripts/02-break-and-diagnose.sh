@@ -2,6 +2,8 @@
 # Slide 27, 30: force a CrashLoopBackOff, diagnose via describe + Events, fix.
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
+az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing 2>/dev/null || true
 
 echo "== Break: point the deployment at a bad env var that crashes readiness (demo /crash route) =="
 kubectl set env deployment/inference-api -n "$NAMESPACE" FORCE_CRASH_DEMO="true"
@@ -16,4 +18,4 @@ kubectl describe pod "$POD" -n "$NAMESPACE" | tail -30
 
 echo "== Fix: remove the bad env var =="
 kubectl set env deployment/inference-api -n "$NAMESPACE" FORCE_CRASH_DEMO-
-kubectl rollout status deployment/inference-api -n "$NAMESPACE"
+kubectl rollout status deployment/inference-api -n "$NAMESPACE" --timeout=120s || echo "  rollout did not complete within 120s - check: kubectl get pods -n $NAMESPACE" >&2
