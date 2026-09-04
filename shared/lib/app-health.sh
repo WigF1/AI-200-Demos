@@ -24,7 +24,20 @@ wait_for_app_health() {
     # for between attempts - without it curl will wait as long as the
     # server (or Azure's front end) takes to respond, which during a real
     # container failure can be much longer than you'd expect from the log.
-    status=$(curl -s --max-time 15 -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+    # --connect-timeout separately bounds just the connection phase, so a
+    # fully-down backend fails fast rather than waiting out the full
+    # --max-time budget.
+    #
+    # No "|| echo 000" fallback here on purpose: curl's own -w "%{http_code}"
+    # already reliably prints "000" when no response was received (refused
+    # connection, timeout, DNS failure, etc.), even though curl's exit code
+    # is non-zero in that case. Adding a fallback on top of that produced
+    # "000000" - curl's own "000" plus the fallback's "000" concatenated -
+    # instead of "000".
+    status=$(curl -s --connect-timeout 5 --max-time 15 -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null)
+    if [ -z "$status" ]; then
+      status="000"
+    fi
     body=$(cat "$body_file" 2>/dev/null)
 
     is_healthy="false"
