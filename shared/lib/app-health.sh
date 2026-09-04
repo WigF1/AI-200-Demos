@@ -28,13 +28,20 @@ wait_for_app_health() {
     # fully-down backend fails fast rather than waiting out the full
     # --max-time budget.
     #
-    # No "|| echo 000" fallback here on purpose: curl's own -w "%{http_code}"
+    # "|| true" (not "|| echo 000") on purpose: curl's own -w "%{http_code}"
     # already reliably prints "000" when no response was received (refused
-    # connection, timeout, DNS failure, etc.), even though curl's exit code
-    # is non-zero in that case. Adding a fallback on top of that produced
-    # "000000" - curl's own "000" plus the fallback's "000" concatenated -
-    # instead of "000".
-    status=$(curl -s --connect-timeout 5 --max-time 15 -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null)
+    # connection, timeout, DNS failure, etc.) - that's captured as $status
+    # before curl's own non-zero exit code is ever seen. The "|| true" only
+    # exists to stop that non-zero exit from tripping set -euo pipefail and
+    # silently killing the whole script (which is exactly what happened
+    # after removing this the first time: curl failing on the very first
+    # poll - e.g. right after `az webapp start`, before the container
+    # accepts connections yet - aborted the script with no output at all,
+    # since the failure happened inside the command substitution itself,
+    # before execution ever reached the code below that handles it).
+    # "|| true" prints nothing, so it can't reintroduce the "000000"
+    # duplication bug that "|| echo 000" caused.
+    status=$(curl -s --connect-timeout 5 --max-time 15 -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || true)
     if [ -z "$status" ]; then
       status="000"
     fi
