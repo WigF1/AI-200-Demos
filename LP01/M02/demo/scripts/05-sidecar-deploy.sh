@@ -26,18 +26,26 @@ az webapp sitecontainers convert \
   --resource-group "$RESOURCE_GROUP" \
   --mode sitecontainers --yes || echo "  (already in sitecontainers mode, or nothing to convert - see any error above)"
 
-echo "== Write a spec file for a small public 'sidecar' image (busybox log-tailer stand-in) =="
+echo "== Write a spec file for a small public 'sidecar' image (this exact image is Microsoft's own public-registry example for sitecontainers) =="
+# Schema confirmed against: az webapp sitecontainers create --help (top-level
+# "name" + "properties" wrapper) and Microsoft's own tutorial-sidecar.md tip
+# for using a public image, which uses this exact image path with this exact
+# properties shape. Two mistakes an earlier version of this script had:
+# "containerName" instead of "name" at the top level, and all the container
+# fields sitting flat at the top level instead of nested under "properties" -
+# both caused "Failed to create or update sitecontainer None. Error: No
+# value for given attribute" (the "None" was the never-found name).
 cat > /tmp/sidecar-spec.json <<JSON
 [
   {
-    "containerName": "log-forwarder",
-    "image": "mcr.microsoft.com/appsvc/docs/sidecars/sample-experiment:otel-appinsights-1.0",
-    "isMain": false,
-    "authType": "Anonymous",
-    "startUpCommand": "",
-    "targetPort": "",
-    "volumeMounts": [],
-    "environmentVariables": []
+    "name": "log-forwarder",
+    "properties": {
+      "image": "mcr.microsoft.com/appsvc/docs/sidecars/sample-experiment:otel-appinsights-1.0",
+      "isMain": false,
+      "authType": "Anonymous",
+      "volumeMounts": [],
+      "environmentVariables": []
+    }
   }
 ]
 JSON

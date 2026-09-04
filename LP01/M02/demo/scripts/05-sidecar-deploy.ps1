@@ -19,19 +19,27 @@ Write-Host "== Convert the app to sidecar-enabled (sitecontainers) mode =="
 az webapp sitecontainers convert --name $WebAppName --resource-group $ResourceGroup --mode sitecontainers --yes
 if ($LASTEXITCODE -ne 0) { Write-Host "  (already in sitecontainers mode, or nothing to convert - see any error above)" }
 
-Write-Host "== Write a spec file for a small sample sidecar image =="
+Write-Host "== Write a spec file for a small public 'sidecar' image (this exact image is Microsoft's own public-registry example for sitecontainers) =="
+# Schema confirmed against: az webapp sitecontainers create --help (top-level
+# "name" + "properties" wrapper) and Microsoft's own tutorial-sidecar.md tip
+# for using a public image, which uses this exact image path with this exact
+# properties shape. Two mistakes an earlier version of this script had:
+# "containerName" instead of "name" at the top level, and all the container
+# fields sitting flat at the top level instead of nested under "properties" -
+# both caused "Failed to create or update sitecontainer None. Error: No
+# value for given attribute" (the "None" was the never-found name).
 $specPath = "$env:TEMP\sidecar-spec.json"
 $spec = @'
 [
   {
-    "containerName": "log-forwarder",
-    "image": "mcr.microsoft.com/appsvc/docs/sidecars/sample-experiment:otel-appinsights-1.0",
-    "isMain": false,
-    "authType": "Anonymous",
-    "startUpCommand": "",
-    "targetPort": "",
-    "volumeMounts": [],
-    "environmentVariables": []
+    "name": "log-forwarder",
+    "properties": {
+      "image": "mcr.microsoft.com/appsvc/docs/sidecars/sample-experiment:otel-appinsights-1.0",
+      "isMain": false,
+      "authType": "Anonymous",
+      "volumeMounts": [],
+      "environmentVariables": []
+    }
   }
 ]
 '@
