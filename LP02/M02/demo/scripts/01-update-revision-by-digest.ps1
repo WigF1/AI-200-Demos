@@ -1,6 +1,7 @@
 # Slide 18: image identity - tags are mutable, digests are immutable.
 Set-Location $PSScriptRoot
 . ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
 
 $LoginServer = az acr show --name $AcrName --query loginServer --output tsv
 

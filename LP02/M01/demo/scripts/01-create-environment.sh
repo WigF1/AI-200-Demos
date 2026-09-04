@@ -3,26 +3,49 @@
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
 
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output table
-az provider register --namespace Microsoft.App
-az provider register --namespace Microsoft.OperationalInsights
+if az group show --name "$RESOURCE_GROUP" --output none 2>/dev/null; then
+  echo "Resource group '$RESOURCE_GROUP' already exists."
+else
+  az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output table
+fi
+
+az provider register --namespace Microsoft.App --wait
+az provider register --namespace Microsoft.OperationalInsights --wait
 az extension add --name containerapp --upgrade --only-show-errors
 
-az monitor log-analytics workspace create \
-  --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" \
-  --output table
+if az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" \
+     --workspace-name "$LOG_ANALYTICS_WORKSPACE" --output none 2>/dev/null; then
+  echo "Log Analytics workspace '$LOG_ANALYTICS_WORKSPACE' already exists."
+else
+  az monitor log-analytics workspace create \
+    --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" \
+    --output table
+fi
 
 LAW_ID=$(az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" \
   --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query customerId --output tsv)
 LAW_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group "$RESOURCE_GROUP" \
   --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query primarySharedKey --output tsv)
 
-az containerapp env create \
-  --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
-  --logs-workspace-id "$LAW_ID" --logs-workspace-key "$LAW_KEY" \
-  --output table
+if az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null; then
+  echo "Container Apps environment '$ACA_ENV' already exists."
+else
+  az containerapp env create \
+    --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
+    --logs-workspace-id "$LAW_ID" --logs-workspace-key "$LAW_KEY" \
+    --output table
+fi
 
-az acr create --resource-group "$RESOURCE_GROUP" --name "$ACR_NAME" \
-  --sku Standard --admin-enabled false --output table
-az acr build --registry "$ACR_NAME" \
-  --image "${IMAGE_NAME}:${IMAGE_TAG}" --file "${APP_DIR}/Dockerfile" "$APP_DIR"
+if az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null; then
+  echo "ACR '$ACR_NAME' already exists."
+else
+  az acr create --resource-group "$RESOURCE_GROUP" --name "$ACR_NAME" \
+    --sku Standard --admin-enabled false --output table
+fi
+
+if az acr repository show --name "$ACR_NAME" --image "${IMAGE_NAME}:${IMAGE_TAG}" --output none 2>/dev/null; then
+  echo "Image '${IMAGE_NAME}:${IMAGE_TAG}' already in '$ACR_NAME'."
+else
+  az acr build --registry "$ACR_NAME" \
+    --image "${IMAGE_NAME}:${IMAGE_TAG}" --file "${APP_DIR}/Dockerfile" "$APP_DIR"
+fi

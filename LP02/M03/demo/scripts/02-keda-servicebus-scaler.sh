@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Slide 31, 36: KEDA azure-servicebus scaler, scale-to-zero for queue-driven workers.
-# Requires an existing Service Bus namespace + queue (see LP07/M01) or edit
-# the vars below to point at one.
+# 00-ensure-prereqs.sh creates a Basic-tier namespace + queue if one
+# doesn't already exist - no dependency on another learning path.
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
 
 CONN_STRING=$(az servicebus namespace authorization-rule keys list \
   --resource-group "$RESOURCE_GROUP" --namespace-name "$SERVICEBUS_NAMESPACE" \

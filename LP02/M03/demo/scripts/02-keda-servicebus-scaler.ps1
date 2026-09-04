@@ -1,6 +1,7 @@
 # Slide 31, 36: KEDA azure-servicebus scaler, scale-to-zero for queue-driven workers.
 Set-Location $PSScriptRoot
 . ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
 
 $ConnString = az servicebus namespace authorization-rule keys list `
   --resource-group $ResourceGroup --namespace-name $ServiceBusNamespace `

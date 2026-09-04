@@ -3,11 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
 
-echo "== Console + system logs (Ctrl+C to stop tailing) =="
-az containerapp logs show --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" --follow &
-LOGS_PID=$!
-sleep 5
-kill "$LOGS_PID" 2>/dev/null || true
+echo "== Console + system logs (5s sample) =="
+timeout 5 az containerapp logs show --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" --follow || true
 
 echo "== Revisions =="
 az containerapp revision list --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \

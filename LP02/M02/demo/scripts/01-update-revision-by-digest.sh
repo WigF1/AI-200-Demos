@@ -4,6 +4,7 @@
 # for production traceability.
 set -euo pipefail
 cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
 
 LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer --output tsv)
 
