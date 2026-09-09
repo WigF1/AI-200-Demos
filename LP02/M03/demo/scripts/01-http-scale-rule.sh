@@ -14,7 +14,3 @@ add_or_update_scale_rule "$ACA_APP" "$RESOURCE_GROUP" "http-scale-rule" \
   --scale-rule-name http-scale-rule \
   --scale-rule-type http \
   --scale-rule-http-concurrency 10
-
-echo "== Confirming all scale rules present =="
-az containerapp show --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \
-  --query "properties.template.scale" --output json

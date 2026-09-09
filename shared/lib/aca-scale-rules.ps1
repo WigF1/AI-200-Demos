@@ -94,5 +94,32 @@ with open("/tmp/aca-merged.yaml", "w") as f:
     python3 $mergeScriptPath
 
     Write-Host "== Reapplying merged config so all scale rules coexist =="
-    az containerapp update --name $App --resource-group $ResourceGroup --yaml /tmp/aca-merged.yaml --output table
+    az containerapp update --name $App --resource-group $ResourceGroup --yaml /tmp/aca-merged.yaml --output none
+
+    # The two update calls above go through a genuinely-different-then-
+    # corrected-back-again intermediate state (first call sets ONLY the
+    # new rule with its own maxReplicas, second call restores the rest) -
+    # a read right after this function returns can catch that transient
+    # state before it's settled rather than the final merged result. Poll
+    # until the live config actually matches what we just applied.
+    $countScript = @'
+import yaml
+with open("/tmp/aca-merged.yaml") as f:
+    doc = yaml.safe_load(f)
+print(len(doc["properties"]["template"]["scale"].get("rules", [])))
+'@
+    $countScriptPath = "$env:TEMP\count-rules.py"
+    Set-Content -Path $countScriptPath -Value $countScript
+    $expectedRuleCount = python3 $countScriptPath
+
+    for ($attempt = 1; $attempt -le 6; $attempt++) {
+        $liveRuleCount = az containerapp show --name $App --resource-group $ResourceGroup `
+          --query "length(properties.template.scale.rules)" --output tsv
+        if ($liveRuleCount -eq $expectedRuleCount) { break }
+        Write-Host "  waiting for the merged config to settle (attempt $attempt`: $liveRuleCount/$expectedRuleCount rules visible)..."
+        Start-Sleep -Seconds 5
+    }
+
+    Write-Host "== Confirmed final scale config =="
+    az containerapp show --name $App --resource-group $ResourceGroup --query "properties.template.scale" --output json
 }

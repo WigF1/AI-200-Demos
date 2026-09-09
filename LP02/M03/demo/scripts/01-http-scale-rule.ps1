@@ -15,7 +15,4 @@ Add-OrUpdateScaleRule -App $AcaApp -ResourceGroup $ResourceGroup -RuleName "http
     "--scale-rule-http-concurrency", "10"
 )
 
-Write-Host "== Confirming all scale rules present =="
-az containerapp show --name $AcaApp --resource-group $ResourceGroup --query "properties.template.scale" --output json
-
 Write-ElapsedTime

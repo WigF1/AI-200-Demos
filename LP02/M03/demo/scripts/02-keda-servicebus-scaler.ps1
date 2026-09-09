@@ -29,7 +29,4 @@ Add-OrUpdateScaleRule -App $AcaApp -ResourceGroup $ResourceGroup -RuleName "serv
     "--scale-rule-auth", "connection=servicebus-connection"
 )
 
-Write-Host "== Confirming all scale rules present =="
-az containerapp show --name $AcaApp --resource-group $ResourceGroup --query "properties.template.scale" --output json
-
 Write-ElapsedTime
