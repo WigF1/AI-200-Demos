@@ -16,12 +16,35 @@ if ([int]$RevisionCount -lt 2) {
 az containerapp revision list --name $AcaApp --resource-group $ResourceGroup `
   --query "[].{name:name, active:properties.active}" --output table
 
-$Latest = az containerapp revision list --name $AcaApp --resource-group $ResourceGroup --query "[0].name" --output tsv
-$Previous = az containerapp revision list --name $AcaApp --resource-group $ResourceGroup --query "[1].name" --output tsv
+# Identify which revision is the canary by the trait we actually control
+# (the IMAGE_VERSION=v2-canary env var set above), not by position in the
+# list - az containerapp revision list's ordering isn't newest-first as
+# might be assumed (confirmed the hard way: an earlier version of this
+# script used [0]/[1] and ended up applying the weights backwards - the
+# pre-existing revision got labeled "latest" and the just-created canary
+# got labeled "previous", so the canary ended up with 80% of traffic
+# instead of the intended 20%).
+$CanaryRevision = $null
+$StableRevision = $null
+$allRevisions = az containerapp revision list --name $AcaApp --resource-group $ResourceGroup --query "[].name" --output tsv
+foreach ($rev in $allRevisions) {
+    $imgVer = az containerapp revision show --name $AcaApp --resource-group $ResourceGroup --revision $rev `
+      --query "properties.template.containers[0].env[?name=='IMAGE_VERSION'].value | [0]" --output tsv 2>$null
+    if ($imgVer -eq "v2-canary") {
+        $CanaryRevision = $rev
+    } elseif (-not $StableRevision) {
+        $StableRevision = $rev
+    }
+}
 
-Write-Host "== 20/80 canary split: $Latest gets 20%, $Previous gets 80% =="
+if (-not $CanaryRevision -or -not $StableRevision) {
+    Write-Error "Could not identify both a canary and a stable revision - check: az containerapp revision list -n $AcaApp -g $ResourceGroup"
+    exit 1
+}
+
+Write-Host "== 20/80 canary split: $CanaryRevision (v2-canary) gets 20%, $StableRevision gets 80% =="
 az containerapp ingress traffic set --name $AcaApp --resource-group $ResourceGroup `
-  --revision-weight "${Latest}=20" "${Previous}=80" `
+  --revision-weight "${CanaryRevision}=20" "${StableRevision}=80" `
   --output table
 
 Write-Host ""

@@ -19,14 +19,34 @@ fi
 az containerapp revision list --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \
   --query "[].{name:name, active:properties.active}" --output table
 
-LATEST=$(az containerapp revision list --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \
-  --query "[0].name" --output tsv)
-PREVIOUS=$(az containerapp revision list --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \
-  --query "[1].name" --output tsv)
+# Identify which revision is the canary by the trait we actually control
+# (the IMAGE_VERSION=v2-canary env var set above), not by position in the
+# list - az containerapp revision list's ordering isn't newest-first as
+# might be assumed (confirmed the hard way: an earlier version of this
+# script used [0]/[1] and ended up applying the weights backwards - the
+# pre-existing revision got labeled "latest" and the just-created canary
+# got labeled "previous", so the canary ended up with 80% of traffic
+# instead of the intended 20%).
+CANARY_REVISION=""
+STABLE_REVISION=""
+for rev in $(az containerapp revision list --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" --query "[].name" --output tsv); do
+  IMG_VER=$(az containerapp revision show --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" --revision "$rev" \
+    --query "properties.template.containers[0].env[?name=='IMAGE_VERSION'].value | [0]" --output tsv 2>/dev/null || echo "")
+  if [ "$IMG_VER" = "v2-canary" ]; then
+    CANARY_REVISION="$rev"
+  elif [ -z "$STABLE_REVISION" ]; then
+    STABLE_REVISION="$rev"
+  fi
+done
 
-echo "== 20/80 canary split: $LATEST gets 20%, $PREVIOUS gets 80% =="
+if [ -z "$CANARY_REVISION" ] || [ -z "$STABLE_REVISION" ]; then
+  echo "Could not identify both a canary and a stable revision - check: az containerapp revision list -n $ACA_APP -g $RESOURCE_GROUP" >&2
+  exit 1
+fi
+
+echo "== 20/80 canary split: $CANARY_REVISION (v2-canary) gets 20%, $STABLE_REVISION gets 80% =="
 az containerapp ingress traffic set --name "$ACA_APP" --resource-group "$RESOURCE_GROUP" \
-  --revision-weight "${LATEST}=20" "${PREVIOUS}=80" \
+  --revision-weight "${CANARY_REVISION}=20" "${STABLE_REVISION}=80" \
   --output table
 
 echo
