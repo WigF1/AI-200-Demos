@@ -6,6 +6,13 @@ $ErrorActionPreference = "Stop"
 # Write-ElapsedTime to print it on the success path.
 . "$PSScriptRoot/../../../../shared/lib/timing.ps1"
 Start-ElapsedTimer
+
+# Fail fast (before wasting minutes on AKS cluster creation, or anything
+# else) if kubectl isn't installed - az CLI doesn't install it for you.
+if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
+    Write-Error "kubectl not found. Install it with: az aks install-cli (or via your OS package manager: https://kubernetes.io/docs/tasks/tools/)"
+    exit 1
+}
 if (-not $Suffix) { $Suffix = "ai200lp03" }
 if (-not $Location) { $Location = "australiaeast" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp03-aks" }
