@@ -29,3 +29,15 @@ az config set core.only_show_errors=true
 
 That also hides other future CLI warnings, so it's a trade-off, not
 something baked into these scripts.
+
+## M03: 01 and 02's scale rules coexist - no need to re-run either
+
+`az containerapp update --scale-rule-name ...` replaces the app's entire
+scale rule set by default (confirmed against Microsoft's own tutorial) -
+so a naive `02-keda-servicebus-scaler` would silently delete `01-http-
+scale-rule`'s rule instead of adding alongside it. `02` works around this
+by exporting the current config, letting the CLI generate the new rule
+in isolation, then splicing that rule into whatever was already there
+and reapplying the merged result. Run `01` then `02` (in either order,
+any number of times) and both rules - and `04`/`05`'s demos of each -
+stay available without re-running the other.
