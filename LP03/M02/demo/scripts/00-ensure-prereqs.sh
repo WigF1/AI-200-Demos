@@ -41,7 +41,14 @@ fi
 az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-if ! kubectl get deployment inference-api -n "$NAMESPACE" --output none 2>/dev/null; then
+# NOTE: kubectl has no "none" output format (valid values are json,
+# yaml, name, wide, jsonpath, custom-columns, etc. - "none" isn't among
+# them, unlike az CLI where --output none is valid). Using it here meant
+# this check failed with an invalid-flag error every single time,
+# regardless of whether the deployment actually existed, so this branch
+# always ran even when it shouldn't have. Fixed by suppressing both
+# streams via redirection instead of a fake output format.
+if ! kubectl get deployment inference-api -n "$NAMESPACE" >/dev/null 2>&1; then
   echo "Base deployment not found - applying it from LP03/M01's manifests..."
   LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer --output tsv)
   sed "s#<ACR_LOGIN_SERVER>#${LOGIN_SERVER}#g" ../../../M01/demo/manifests/deployment.yaml > /tmp/deployment.yaml
