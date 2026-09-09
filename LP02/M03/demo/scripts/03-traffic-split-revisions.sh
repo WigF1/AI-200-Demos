@@ -58,7 +58,7 @@ FQDN=$(az containerapp show --name "$ACA_APP" --resource-group "$RESOURCE_GROUP"
   --query properties.configuration.ingress.fqdn --output tsv)
 CANARY_HITS=0
 OTHER_HITS=0
-for i in $(seq 1 30); do
+for i in $(seq 1 300); do
   VERSION=$(curl -s --max-time 10 "https://${FQDN}/config" | python3 -c "import json,sys; print(json.load(sys.stdin).get('imageVersion','?'))" 2>/dev/null || echo "?")
   if [ "$VERSION" = "v2-canary" ]; then
     CANARY_HITS=$((CANARY_HITS + 1))
@@ -66,6 +66,6 @@ for i in $(seq 1 30); do
     OTHER_HITS=$((OTHER_HITS + 1))
   fi
 done
-echo "canary (v2-canary): $CANARY_HITS/30 requests (~$((CANARY_HITS * 100 / 30))%, configured 20%)"
-echo "other:               $OTHER_HITS/30 requests (~$((OTHER_HITS * 100 / 30))%, configured 80%)"
+echo "canary (v2-canary): $CANARY_HITS/300 requests (~$((CANARY_HITS * 100 / 300))%, configured 20%)"
+echo "other:               $OTHER_HITS/300 requests (~$((OTHER_HITS * 100 / 300))%, configured 80%)"
 echo "(small sample - expect noise around the configured weights, not an exact match)"
