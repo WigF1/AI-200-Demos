@@ -16,4 +16,4 @@
 - `demo/manifests/service-clusterip.yaml` — Slide 7: `ClusterIP` Service (internal-only, for comparison)
 - `demo/scripts/01-create-aks-cluster` — Slide 5: managed control plane, attach ACR
 - `demo/scripts/02-deploy-manifests` — Slide 8: apply manifests, verification order (Pod → Service → logs)
-- `demo/scripts/03-troubleshoot-common-failures` — Slide 8: `ImagePullBackOff` / `CrashLoopBackOff` / `Pending` / no-endpoints demo
+- `demo/scripts/03-troubleshoot-common-failures` — Slide 8: `ImagePullBackOff` / `CrashLoopBackOff` / `Pending` / no-endpoints demo. Pauses at each stage (skipped automatically in a non-interactive run) so a presenter can talk through it, and prints a suggested order of Portal/CLI actions to run alongside it - see the script's own output for the full list.
