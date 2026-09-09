@@ -21,8 +21,14 @@ az containerapp secret set --name $AcaApp --resource-group $ResourceGroup `
 # doesn't wipe out 01-http-scale-rule.ps1's rule if that already ran -
 # az containerapp update replaces the entire scale rule set by default.
 # See shared/lib/aca-scale-rules.ps1 for why.
+#
+# Matches 01-http-scale-rule's max-replicas (10) on purpose - the shared
+# helper no longer silently picks "whichever is higher", so if this used
+# a different value, whichever script ran last would set the app's
+# actual ceiling. 10 comfortably covers this demo too (20 messages / 5
+# per replica = ~4 replicas needed), so there's no reason to disagree.
 Add-OrUpdateScaleRule -App $AcaApp -ResourceGroup $ResourceGroup -RuleName "servicebus-queue-scale" -UpdateArgs @(
-    "--min-replicas", "0", "--max-replicas", "5",
+    "--min-replicas", "0", "--max-replicas", "10",
     "--scale-rule-name", "servicebus-queue-scale",
     "--scale-rule-type", "azure-servicebus",
     "--scale-rule-metadata", "queueName=$ServiceBusQueue", "namespace=$ServiceBusNamespace", "messageCount=5",

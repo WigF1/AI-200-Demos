@@ -16,6 +16,15 @@
 # replacing) update call, then splices that CLI-generated rule back in
 # alongside the preserved ones and reapplies the merged result.
 #
+# Only the RULES are preserved from before this call - minReplicas and
+# maxReplicas are whatever you explicitly pass in this call's
+# --min-replicas/--max-replicas, with no silent "keep the higher value"
+# override. maxReplicas is a single app-wide ceiling, not something a
+# rule owns, so there's no principled way to decide whose value should
+# win - the least surprising behavior is that what you pass is what you
+# get. If multiple scripts set competing scale rules on the same app and
+# care about a specific ceiling, have them agree on the same value.
+#
 # Usage: dot-source this file, then:
 #   Add-OrUpdateScaleRule -App $AcaApp -ResourceGroup $ResourceGroup -RuleName "http-scale-rule" -UpdateArgs @(
 #       "--min-replicas", "0", "--max-replicas", "10",
@@ -60,7 +69,7 @@ scale = (before.get("properties", {}).get("template", {}) or {}).get("scale", {}
 existing_rules = scale.get("rules", []) or []
 preserved = [r for r in existing_rules if r.get("name") != rule_name]
 with open("/tmp/preserved-rules.yaml", "w") as f:
-    yaml.safe_dump({"preserved": preserved, "priorMaxReplicas": scale.get("maxReplicas")}, f)
+    yaml.safe_dump({"preserved": preserved}, f)
 '@
     $extractScriptPath = "$env:TEMP\extract-rules.py"
     Set-Content -Path $extractScriptPath -Value $extractScript
@@ -79,12 +88,9 @@ with open("/tmp/preserved-rules.yaml") as f:
 
 scale = after["properties"]["template"]["scale"]
 new_rules = scale.get("rules", []) or []
-merged = preserved_data["preserved"] + new_rules
-scale["rules"] = merged
-
-prior_max = preserved_data.get("priorMaxReplicas")
-if isinstance(prior_max, int) and prior_max > scale.get("maxReplicas", 0):
-    scale["maxReplicas"] = prior_max
+scale["rules"] = preserved_data["preserved"] + new_rules
+# minReplicas/maxReplicas are left exactly as this call's own update just
+# set them - no override from whatever was there before.
 
 with open("/tmp/aca-merged.yaml", "w") as f:
     yaml.safe_dump(after, f, default_flow_style=False)
