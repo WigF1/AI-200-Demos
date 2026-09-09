@@ -18,15 +18,15 @@ function Wait-ForPresenter {
 
 Write-Host @"
 Common failure signals (Slide 8 / Module 1 summary):
-  ImagePullBackOff  -> registry path or pull access issue
-  CrashLoopBackOff  -> app starts, then exits or fails health checks
-  Pending           -> resource requests exceed available node capacity
-  No endpoints      -> Service selector does not match Pod labels
+  ImagePullBackOff  -> registry path or pull access issue        (see 04-troubleshoot-imagepull-backoff)
+  CrashLoopBackOff  -> app starts, then exits or fails health checks (see 05-troubleshoot-crashloop-backoff)
+  Pending           -> resource requests exceed available node capacity (see 06-troubleshoot-pending)
+  No endpoints      -> Service selector does not match Pod labels  (this script)
 
-Live demo: break the Service selector on purpose, observe "no endpoints",
-diagnose, then fix it. This script pauses at each stage - all portal
-steps below are optional extras to show alongside it, not required for
-the script itself to work.
+This script demonstrates "No endpoints" specifically: break the Service
+selector on purpose, observe it, diagnose, then fix it. 04/05/06 cover
+the other three signals with the same pause/portal-guidance pattern -
+run whichever is relevant, in any order, independently of this one.
 
 Suggested order to run/show alongside this script:
   1. BEFORE breaking anything (Portal): open the AKS resource ->
