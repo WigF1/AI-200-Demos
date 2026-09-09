@@ -18,7 +18,7 @@ kubectl patch svc inference-api-external -n "$NAMESPACE" \
   -p '{"spec":{"selector":{"app":"does-not-exist"}}}'
 
 echo "== Observe: no endpoints even though Pods are Running =="
-kubectl get endpoints inference-api-external -n "$NAMESPACE"
+kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=inference-api-external
 kubectl get pods -n "$NAMESPACE" -l app=inference-api
 
 echo "== Diagnose: describe the service, compare selector to Pod labels =="
@@ -27,4 +27,4 @@ kubectl describe svc inference-api-external -n "$NAMESPACE"
 echo "== Fix: restore the correct selector =="
 kubectl patch svc inference-api-external -n "$NAMESPACE" \
   -p '{"spec":{"selector":{"app":"inference-api"}}}'
-kubectl get endpoints inference-api-external -n "$NAMESPACE"
+kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=inference-api-external

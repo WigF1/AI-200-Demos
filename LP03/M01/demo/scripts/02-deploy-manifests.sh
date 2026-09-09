@@ -18,7 +18,10 @@ kubectl get pods -n "$NAMESPACE" -l app=inference-api
 
 echo "== 2) Service exposure and endpoint assignment =="
 kubectl get svc -n "$NAMESPACE"
-kubectl get endpoints inference-api-external -n "$NAMESPACE"
+# v1 Endpoints (kubectl get endpoints) is deprecated as of Kubernetes
+# v1.33+ in favor of discovery.k8s.io/v1 EndpointSlice - same API used
+# in LP03/M03/03-verify-connectivity.sh.
+kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=inference-api-external
 
 echo "== 3) Logs (only after status/exposure look healthy) =="
 POD=$(kubectl get pods -n "$NAMESPACE" -l app=inference-api -o jsonpath='{.items[0].metadata.name}')

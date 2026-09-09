@@ -17,7 +17,10 @@ kubectl get pods -n $Namespace -l app=inference-api
 
 Write-Host "== 2) Service exposure and endpoint assignment =="
 kubectl get svc -n $Namespace
-kubectl get endpoints inference-api-external -n $Namespace
+# v1 Endpoints (kubectl get endpoints) is deprecated as of Kubernetes
+# v1.33+ in favor of discovery.k8s.io/v1 EndpointSlice - same API used
+# in LP03/M03/03-verify-connectivity.ps1.
+kubectl get endpointslice -n $Namespace -l kubernetes.io/service-name=inference-api-external
 
 Write-Host "== 3) Logs =="
 $Pod = kubectl get pods -n $Namespace -l app=inference-api -o jsonpath='{.items[0].metadata.name}'

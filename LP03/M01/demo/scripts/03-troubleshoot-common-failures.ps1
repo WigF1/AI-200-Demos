@@ -14,7 +14,7 @@ Write-Host "== Break: patch the Service to select a label that doesn't exist =="
 kubectl patch svc inference-api-external -n $Namespace -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'
 
 Write-Host "== Observe: no endpoints even though Pods are Running =="
-kubectl get endpoints inference-api-external -n $Namespace
+kubectl get endpointslice -n $Namespace -l kubernetes.io/service-name=inference-api-external
 kubectl get pods -n $Namespace -l app=inference-api
 
 Write-Host "== Diagnose =="
@@ -22,6 +22,6 @@ kubectl describe svc inference-api-external -n $Namespace
 
 Write-Host "== Fix =="
 kubectl patch svc inference-api-external -n $Namespace -p '{\"spec\":{\"selector\":{\"app\":\"inference-api\"}}}'
-kubectl get endpoints inference-api-external -n $Namespace
+kubectl get endpointslice -n $Namespace -l kubernetes.io/service-name=inference-api-external
 
 Write-ElapsedTime
