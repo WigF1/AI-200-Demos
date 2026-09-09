@@ -1,5 +1,16 @@
 # Deployment wired to the ConfigMap, Secret, and PVC above.
 # Replace <ACR_LOGIN_SERVER> before applying.
+#
+# replicas: 1, not 2 - the PVC above is ReadWriteOnce on managed-csi
+# (Azure Disk), which only supports attachment to a single node at a
+# time. With 2+ replicas, if they land on different nodes (which
+# Kubernetes' scheduler has no reason not to do), the second Pod hangs
+# in ContainerCreating indefinitely waiting to attach a disk that's
+# already attached elsewhere - confirmed the hard way: exactly this
+# happened in testing, with one Pod stuck ContainerCreating for 4+
+# minutes while a sibling on another node held the volume. A single
+# replica is also all this specific demo needs - it's proving data
+# survives a Pod restart, not testing concurrent multi-replica access.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +18,7 @@ metadata:
   labels:
     app: inference-api
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: inference-api
