@@ -11,7 +11,7 @@
 ## Contents
 
 - `demo/scripts/01-create-vector-container` (bash/ps1) — Slide 17: vector policy (path/dataType/dimensions/distanceFunction)
-- `demo/python/vector_search.py` — Slide 18-19: store embeddings, `VectorDistance` + `TOP N` query pattern, metadata pre-filtering, RRF hybrid search
+- `demo/python/vector_search.py` — Slide 18-19: store embeddings, `VectorDistance` + `TOP N` query pattern, metadata pre-filtering, RRF hybrid search. Seeds 16 sample documents across 5 categories (networking, hardware, software, security, cloud) so `TOP N` and category filtering have something real to work with.
 
 ## Run it
 

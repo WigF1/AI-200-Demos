@@ -11,6 +11,13 @@ az cosmosdb sql container update --resource-group $ResourceGroup --account-name 
   --output table 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Host "  (no container found)" }
 
+Write-Host "== Deleting the three index comparison containers (02-create-index-comparison-containers.ps1) =="
+foreach ($container in @($IdxFlatContainer, $IdxQuantizedflatContainer, $IdxDiskannContainer)) {
+    az cosmosdb sql container delete --resource-group $ResourceGroup --account-name $CosmosAccount `
+      --database-name $DatabaseName --name $container --yes 2>$null
+    if ($LASTEXITCODE -ne 0) { Write-Host "  (no '$container' container found)" }
+}
+
 Write-Host ""
 Write-Host "Left in place: Cosmos DB account, database, container, and its data."
 Write-Host "To remove everything for LP04, run: ../../99-cleanup-all.ps1"
