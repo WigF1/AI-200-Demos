@@ -27,6 +27,15 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Deployment not found - run ./01-apply-config-and-secrets.ps1 first."
     exit 1
 }
+# A plain "deployment exists" check isn't strict enough here: the base
+# M01 deployment (no run of 01-apply-config-and-secrets.ps1 yet) has no
+# MODEL_API_KEY env var at all, so the env-patching step below would
+# silently find nothing to patch instead of wiring Key Vault in.
+$envNames = kubectl get deployment inference-api -n $Namespace -o jsonpath='{.spec.template.spec.containers[0].env[*].name}'
+if ($envNames -notmatch '\bMODEL_API_KEY\b') {
+    Write-Error "Deployment exists but has no MODEL_API_KEY env var yet - run ./01-apply-config-and-secrets.ps1 first."
+    exit 1
+}
 
 Write-Host "== Enable the Azure Key Vault provider for Secrets Store CSI Driver add-on =="
 $AddonEnabled = az aks show --resource-group $ResourceGroup --name $AksCluster `
@@ -37,6 +46,20 @@ if ($AddonEnabled -ne "True" -and $AddonEnabled -ne "true") {
 } else {
     Write-Host "Add-on already enabled."
 }
+
+# Wait for the driver's own DaemonSet pods to be Ready on nodes before
+# doing anything that depends on it - a Pod trying to mount a CSI volume
+# before this is ready sits in ContainerCreating indefinitely rather
+# than failing with a clear error, and the earlier RBAC propagation
+# waits don't cover this at all (they're a completely separate thing:
+# whether the identity has the right role, not whether the driver
+# itself is up). Verification command per Microsoft's own docs:
+# https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-driver
+Write-Host "== Waiting for the Secrets Store CSI driver to be ready on nodes =="
+kubectl wait --for=condition=Ready pod `
+  -l 'app in (secrets-store-csi-driver,secrets-store-provider-azure)' `
+  -n kube-system --timeout=180s
+if ($LASTEXITCODE -ne 0) { Write-Warning "driver pods did not report Ready within 180s - check: kubectl get pods -n kube-system -l 'app in (secrets-store-csi-driver,secrets-store-provider-azure)' -o wide" }
 
 Write-Host "== Create the Key Vault (RBAC-mode) if it doesn't already exist =="
 az keyvault show --name $KeyVaultName --output none 2>$null
@@ -171,7 +194,11 @@ if ($LASTEXITCODE -ne 0) { Write-Warning "rollout did not complete within 180s -
 
 Write-Host ""
 Write-Host "== Verify 1: the secret is mounted as a file =="
-$Pod = kubectl get pods -n $Namespace -l app=inference-api -o jsonpath='{.items[0].metadata.name}'
+$Pod = kubectl get pods -n $Namespace -l app=inference-api --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}'
+if (-not $Pod) {
+    Write-Error "No Running Pod found to verify against - check: kubectl get pods -n $Namespace"
+    exit 1
+}
 kubectl exec $Pod -n $Namespace -- cat "/mnt/secrets-store/$KvSecretName"
 Write-Host ""
 
