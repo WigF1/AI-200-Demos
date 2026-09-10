@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Slide 6: Account -> Database -> Container -> Item resource hierarchy.
+# Makes this module runnable without LP04/M01 having run first.
 set -euo pipefail
-cd "$(dirname "$0")"; source ./00-vars.sh
+
+echo "== Ensuring prerequisites for LP04/M03 (account, database, base container) =="
 
 if az group show --name "$RESOURCE_GROUP" --output none 2>/dev/null; then
   echo "Resource group '$RESOURCE_GROUP' already exists."
@@ -9,12 +10,10 @@ else
   az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output table
 fi
 
-echo "== Serverless account for demo economics (swap for provisioned RU/s in production) =="
 if az cosmosdb show --resource-group "$RESOURCE_GROUP" --name "$COSMOS_ACCOUNT" --output none 2>/dev/null; then
   echo "Cosmos DB account '$COSMOS_ACCOUNT' already exists."
 else
-  # Account creation is the slow part here (several minutes even for
-  # serverless) - worth timing separately from the rest of the script.
+  echo "Cosmos DB account not found - creating (LP04/M01 likely hasn't run; this takes several minutes)..."
   time_step "Cosmos DB account create" \
     az cosmosdb create \
     --resource-group "$RESOURCE_GROUP" --name "$COSMOS_ACCOUNT" \
@@ -32,7 +31,6 @@ else
     --output table
 fi
 
-echo "== Container with categoryId as the partition key (Slide 6: high-cardinality field) =="
 if az cosmosdb sql container show --resource-group "$RESOURCE_GROUP" --account-name "$COSMOS_ACCOUNT" \
   --database-name "$DATABASE_NAME" --name "$CONTAINER_NAME" --output none 2>/dev/null; then
   echo "Container '$CONTAINER_NAME' already exists."
@@ -44,10 +42,4 @@ else
     --output table
 fi
 
-echo
-echo "== Connection details for the Python script =="
-ENDPOINT=$(az cosmosdb show --resource-group "$RESOURCE_GROUP" --name "$COSMOS_ACCOUNT" --query documentEndpoint --output tsv)
-KEY=$(az cosmosdb keys list --resource-group "$RESOURCE_GROUP" --name "$COSMOS_ACCOUNT" --query primaryMasterKey --output tsv)
-echo "export COSMOS_ENDPOINT=\"$ENDPOINT\""
-echo "export COSMOS_KEY=\"$KEY\""
-echo "(paste the two lines above into your shell before running crud_and_queries.py)"
+echo "Prerequisites ready."

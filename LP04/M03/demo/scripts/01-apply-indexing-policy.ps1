@@ -1,10 +1,7 @@
 # Slide 29, 31: selective indexing + composite index for filter+sort.
-$ErrorActionPreference = "Stop"
-if (-not $Suffix) { $Suffix = "ai200lp04" }
-if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp04-cosmosdb" }
-$CosmosAccount = "cosmos-$Suffix"
-$DatabaseName = "ragstore"
-$ContainerName = "documents"
+Set-Location $PSScriptRoot
+. ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
 
 $IndexingPolicy = @'
 {
@@ -32,3 +29,5 @@ az cosmosdb sql container update `
   --database-name $DatabaseName --name $ContainerName `
   --idx $IndexingPolicy `
   --output table
+
+Write-ElapsedTime

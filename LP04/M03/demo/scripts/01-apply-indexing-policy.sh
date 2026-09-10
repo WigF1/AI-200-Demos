@@ -2,11 +2,8 @@
 # Slide 29, 31: selective indexing (exclude all by default) + a composite
 # index matching a documentType filter + uploadDate DESC sort.
 set -euo pipefail
-SUFFIX="${SUFFIX:-ai200lp04}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp04-cosmosdb}"
-COSMOS_ACCOUNT="cosmos-${SUFFIX}"
-DATABASE_NAME="ragstore"
-CONTAINER_NAME="documents"
+cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
 
 INDEXING_POLICY='{
   "indexingMode": "consistent",

@@ -1,9 +1,7 @@
 # Slide 30, 33: memory/planner tuning for vector workloads; optional read replica.
-$ErrorActionPreference = "Stop"
-if (-not $Suffix) { $Suffix = "ai200lp05" }
-if (-not $ResourceGroup) { $ResourceGroup = "rg-ai200-lp05-postgresql" }
-$PgServer = "pg-$Suffix"
-$PgReplica = "pg-$Suffix-replica"
+Set-Location $PSScriptRoot
+. ./00-vars.ps1
+. ./00-ensure-prereqs.ps1
 
 Write-Host "== Planner/memory tuning for vector search =="
 az postgres flexible-server parameter set `
@@ -19,3 +17,5 @@ Write-Host "  az postgres flexible-server update -g $ResourceGroup -n $PgServer 
 
 Write-Host "== Optional: create a read replica =="
 Write-Host "  az postgres flexible-server replica create -g $ResourceGroup --replica-name $PgReplica --source-server $PgServer"
+
+Write-ElapsedTime

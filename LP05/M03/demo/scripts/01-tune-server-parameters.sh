@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 # Slide 30, 33: memory/planner tuning for vector workloads; optional read replica.
 set -euo pipefail
-SUFFIX="${SUFFIX:-ai200lp05}"
-LOCATION="${LOCATION:-australiaeast}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ai200-lp05-postgresql}"
-PG_SERVER="pg-${SUFFIX}"
-PG_REPLICA="pg-${SUFFIX}-replica"
+cd "$(dirname "$0")"; source ./00-vars.sh
+source ./00-ensure-prereqs.sh
 
 echo "== Planner/memory tuning for vector search (Slide 30) =="
 az postgres flexible-server parameter set \

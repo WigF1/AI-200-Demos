@@ -10,4 +10,15 @@ Source deck: `AI-200T00A-ENU-PowerPoint_05.pptx`
 
 Each module has `demo/scripts` (bash + PowerShell provisioning via
 `az postgres flexible-server`) and `demo/python` (SDK scripts using
-`psycopg` for schema/query/vector work).
+`psycopg` for schema/query/vector work). Each module is self-contained -
+`00-ensure-prereqs` (M02/M03) bootstraps the server/database if M01 hasn't run.
+
+## Admin password persistence
+
+Azure has no way to retrieve an existing server's password, only reset it - so
+the admin password is generated once and cached in `.pg-admin-password` at the
+LP05 root (gitignored, never committed). Every module's script reads that file
+if present rather than generating a new password each run, which would silently
+stop matching the real server. If the file is ever missing but the server
+exists, the script resets the password and re-caches it - printed connection
+details always reflect the password actually on the server.

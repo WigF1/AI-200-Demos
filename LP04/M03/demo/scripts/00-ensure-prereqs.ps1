@@ -1,6 +1,6 @@
-# Slide 6: Account -> Database -> Container -> Item resource hierarchy.
-Set-Location $PSScriptRoot
-. ./00-vars.ps1
+# Makes this module runnable without LP04/M01 having run first.
+
+Write-Host "== Ensuring prerequisites for LP04/M03 (account, database, base container) =="
 
 az group show --name $ResourceGroup --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
@@ -9,11 +9,11 @@ if ($LASTEXITCODE -eq 0) {
     az group create --name $ResourceGroup --location $Location --output table
 }
 
-Write-Host "== Serverless account for demo economics (swap for provisioned RU/s in production) =="
 az cosmosdb show --resource-group $ResourceGroup --name $CosmosAccount --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Cosmos DB account '$CosmosAccount' already exists."
 } else {
+    Write-Host "Cosmos DB account not found - creating (this takes several minutes)..."
     Invoke-TimedStep "Cosmos DB account create" {
         az cosmosdb create `
           --resource-group $ResourceGroup --name $CosmosAccount `
@@ -33,7 +33,6 @@ if ($LASTEXITCODE -eq 0) {
       --output table
 }
 
-Write-Host "== Container with categoryId as the partition key (Slide 6: high-cardinality field) =="
 az cosmosdb sql container show --resource-group $ResourceGroup --account-name $CosmosAccount `
   --database-name $DatabaseName --name $ContainerName --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
@@ -46,12 +45,4 @@ if ($LASTEXITCODE -eq 0) {
       --output table
 }
 
-Write-Host ""
-Write-Host "== Connection details for the Python script =="
-$Endpoint = az cosmosdb show --resource-group $ResourceGroup --name $CosmosAccount --query documentEndpoint --output tsv
-$Key = az cosmosdb keys list --resource-group $ResourceGroup --name $CosmosAccount --query primaryMasterKey --output tsv
-Write-Host "`$env:COSMOS_ENDPOINT = `"$Endpoint`""
-Write-Host "`$env:COSMOS_KEY = `"$Key`""
-Write-Host "(paste the two lines above into your shell before running crud_and_queries.py)"
-
-Write-ElapsedTime
+Write-Host "Prerequisites ready."
