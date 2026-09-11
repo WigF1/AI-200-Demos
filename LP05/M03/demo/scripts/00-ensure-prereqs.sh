@@ -44,11 +44,11 @@ else
 fi
 
 if az postgres flexible-server db show --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" \
-  --database-name "$DB_NAME" --output none 2>/dev/null; then
+  --name "$DB_NAME" --output none 2>/dev/null; then
   echo "Database '$DB_NAME' already exists."
 else
   az postgres flexible-server db create \
-    --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" --database-name "$DB_NAME" \
+    --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" --name "$DB_NAME" \
     --output none
 fi
 

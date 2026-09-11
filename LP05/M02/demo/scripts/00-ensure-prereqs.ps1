@@ -45,12 +45,12 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 az postgres flexible-server db show --resource-group $ResourceGroup --server-name $PgServer `
-  --database-name $DbName --output none 2>$null
+  --name $DbName --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Database '$DbName' already exists."
 } else {
     az postgres flexible-server db create `
-      --resource-group $ResourceGroup --server-name $PgServer --database-name $DbName `
+      --resource-group $ResourceGroup --server-name $PgServer --name $DbName `
       --output none
 }
 
