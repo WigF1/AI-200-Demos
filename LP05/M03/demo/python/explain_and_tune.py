@@ -14,6 +14,7 @@ Run LP05/M02's schema/seed scripts first so document_chunks has data.
 import os
 import random
 
+from pgvector import Vector
 from pgvector.psycopg import register_vector
 from psycopg_pool import ConnectionPool
 
@@ -45,7 +46,10 @@ def add_category_column_and_index():
 
 
 def explain_analyze_vector_query():
-    query_vector = fake_embedding(0)
+    # A plain Python list fails against vector operators like <=> even
+    # after register_vector(conn) - confirmed by reproducing the exact
+    # failure locally. pgvector's own Vector() wrapper is what's needed.
+    query_vector = Vector(fake_embedding(0))
     with pool.connection() as conn:
         register_vector(conn)
         rows = conn.execute(
@@ -63,7 +67,7 @@ def explain_analyze_vector_query():
 
 
 def filtered_vector_query_with_session_tuning():
-    query_vector = fake_embedding(0)
+    query_vector = Vector(fake_embedding(0))
     with pool.connection() as conn:
         register_vector(conn)
         with conn.transaction():

@@ -15,6 +15,7 @@ Run 01-enable-pgvector.sh/.ps1 first.
 import os
 import random
 
+from pgvector import Vector
 from pgvector.psycopg import register_vector
 from psycopg_pool import ConnectionPool
 
@@ -74,7 +75,7 @@ def seed_chunks():
                 INSERT INTO document_chunks (document_id, chunk_index, content, embedding, token_count)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
-                (doc_id, i, text, fake_embedding(i), len(text.split())),
+                (doc_id, i, text, Vector(fake_embedding(i)), len(text.split())),
             )
     print(f"Seeded 3 chunks for document {doc_id}")
 
@@ -96,7 +97,13 @@ def create_hnsw_index():
 
 
 def demo_similarity_search():
-    query_vector = fake_embedding(0)  # pretend this is the user's query embedding
+    # A plain Python list still fails against vector operators like <=>
+    # even after register_vector(conn) - register_vector's automatic
+    # casting only kicks in for column-assignment contexts (e.g. INSERT
+    # into a vector(n) column), not bare operator usage. Wrapping in
+    # pgvector's own Vector() type is what actually fixes it - confirmed
+    # by reproducing the exact failure locally before applying this fix.
+    query_vector = Vector(fake_embedding(0))  # pretend this is the user's query embedding
     with pool.connection() as conn:
         register_vector(conn)
         conn.execute("SET hnsw.ef_search = 100;")  # Slide 30: search-time recall/speed knob
