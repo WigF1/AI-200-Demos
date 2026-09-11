@@ -12,7 +12,7 @@
 ## Contents
 
 - `demo/scripts/01-enable-pgvector` (bash/ps1) — Slide 17: allowlist + `CREATE EXTENSION vector`
-- `demo/python/pgvector_search.py` — Slide 18-22: `vector(n)` column, distance operators, IVFFlat/HNSW index, RAG chunk retrieval
+- `demo/python/pgvector_search.py` — Slide 18-22: `vector(n)` column, distance operators, RAG chunk retrieval, and a real IVFFlat vs HNSW comparison: seeds 3,000 rows (`BULK_ROW_COUNT`, adjustable) into a dedicated table, builds each index in turn (dropping the other first, since PostgreSQL - unlike Cosmos DB - allows dropping/recreating indexes freely, so one table serves both tests), and times both build and query for each. Forces `enable_seqscan off` (scoped via `SET LOCAL`) while testing each index specifically - confirmed while building this that PostgreSQL's planner reasonably prefers a sequential scan over either index at this row count, which would otherwise silently make the comparison measure scan time instead of index time.
 
 ## Run it
 
