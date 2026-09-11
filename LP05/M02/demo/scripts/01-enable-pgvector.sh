@@ -19,7 +19,7 @@ else
   az postgres flexible-server parameter set \
     --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" \
     --name azure.extensions --value "$NEW_EXTENSIONS" \
-    --output table
+    --output none
 fi
 
 echo "Now connect (e.g. psql or the Python script) and run: CREATE EXTENSION IF NOT EXISTS vector;"

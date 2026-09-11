@@ -6,10 +6,10 @@ Set-Location $PSScriptRoot
 
 Write-Host "== Reverting random_page_cost and work_mem to PostgreSQL defaults =="
 az postgres flexible-server parameter set --resource-group $ResourceGroup --server-name $PgServer `
-  --name random_page_cost --value "4" --output table 2>$null
+  --name random_page_cost --value "4" --output none 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Host "  (no server found)" }
 az postgres flexible-server parameter set --resource-group $ResourceGroup --server-name $PgServer `
-  --name work_mem --value "4096" --output table 2>$null
+  --name work_mem --value "4096" --output none 2>$null
 
 Write-Host ""
 Write-Host "Left in place: PostgreSQL server, database, and its data."

@@ -18,7 +18,7 @@ if ($CurrentExtensions -and ($CurrentExtensions -split ',' | Where-Object { $_.T
     az postgres flexible-server parameter set `
       --resource-group $ResourceGroup --server-name $PgServer `
       --name azure.extensions --value $NewExtensions `
-      --output table
+      --output none
 }
 
 Write-Host "Now connect (e.g. psql or the Python script) and run: CREATE EXTENSION IF NOT EXISTS vector;"
