@@ -29,12 +29,28 @@ echo "== Balanced_B1: 4:1 memory-to-vCPU ratio, good default for AI workloads ==
 if az redisenterprise show --name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null; then
   echo "Azure Managed Redis cluster '$REDIS_NAME' already exists."
 else
+  # --public-network-access is required as of API version 2025-07-01
+  # (confirmed the hard way: omitting it fails with "'properties.
+  # publicNetworkAccess' is required in API version 2025-07-01" even
+  # though the CLI itself doesn't enforce it as a required argument
+  # until a later breaking-change release). Enabled is correct here
+  # since the Python demos connect over the public hostname, not a
+  # private endpoint - for anything beyond a training exercise, Disabled
+  # plus a private endpoint is the more secure choice.
   time_step "Azure Managed Redis create" \
     az redisenterprise create \
     --name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --sku Balanced_B1 \
+    --public-network-access Enabled \
     --output table
 fi
+
+# access-keys-auth's default is changing from Enabled to Disabled in a
+# future breaking-change release - setting it explicitly here means this
+# script keeps working (these demos are key-based, see the note at the
+# top of this file) regardless of when that default flips.
+az redisenterprise database update --cluster-name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" \
+  --access-keys-auth Enabled --output none
 
 echo
 echo "== Connection details for the Python scripts =="
