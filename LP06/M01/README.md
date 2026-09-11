@@ -10,7 +10,9 @@
 ## Contents
 
 - `demo/scripts/01-create-redis-cache` (bash/ps1) — Slide 6: Balanced tier, port 10000
-- `demo/python/data_operations.py` — Slide 7-9: pipelining, strings/hashes/lists, `SETEX`/`EXPIRE`, cache-aside
+- `demo/python/data_operations.py` — Slide 7-9: all core data types (strings, hashes, lists, sets, sorted sets, atomic INCR/DECR counters), pipelining, manual invalidation (explicit `DEL`), time-based invalidation (`SETEX`/TTL - waits for a real expiry to happen, not just printing the configured value), cache-aside, and key iteration (`SCAN` vs `KEYS`, with a comment on why `KEYS` is unsafe in production despite matching here on a tiny local dataset)
+
+Verified end-to-end by running the actual script against a local `redis-server` before shipping.
 
 ## Run it
 

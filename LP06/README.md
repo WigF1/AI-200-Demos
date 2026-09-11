@@ -10,3 +10,33 @@ Source deck: `AI-200T00A-ENU-PowerPoint_06.pptx`
 
 Each module has `demo/scripts` (bash + PowerShell provisioning via
 `az redisenterprise`) and `demo/python` (SDK scripts using `redis-py`).
+Each module is self-contained - `00-ensure-prereqs` (M02/M03) recreates
+the cluster if M01 hasn't run.
+
+## Current best practice: Microsoft Entra ID over access keys
+
+Confirmed against Microsoft's own docs (learn.microsoft.com/en-us/azure/
+redis/scripts/create-manage-cache, checked 2026): "Microsoft Entra
+authentication is enabled by default for all new caches and is
+recommended for security... provides better security and is easier to
+use than shared access key authorization." These demos use access keys
+throughout to match the deck's own teaching content and keep the Python
+examples approachable - for anything beyond a training exercise, prefer
+Entra ID with managed identities instead (`az redisenterprise database
+access-policy-assignment create`).
+
+## Testing notes
+
+M01 (data types, invalidation, key iteration) and M02 (streams with
+multiple consumer groups, pub/sub) were fully verified by running the
+actual scripts against a local `redis-server` before shipping. M03
+(vector storage via RediSearch) could only be partially verified this
+way - the RediSearch module available for local testing (via apt) is an
+old version that predates vector field support entirely, so its schema
+and query syntax were verified through current documentation instead,
+cross-checked against multiple independent sources. One real bug was
+still caught in the process: `redis.commands.search.indexDefinition` -
+shown in some current-looking documentation - doesn't exist in the
+`redis` package version `pip install redis` actually installs; the real
+module is `index_definition` (confirmed by direct testing against the
+installed package, not just reading docs).
