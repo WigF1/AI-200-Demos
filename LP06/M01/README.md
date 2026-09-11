@@ -12,16 +12,22 @@
 - `demo/scripts/01-create-redis-cache` (bash/ps1) — Slide 6: Balanced tier, port 10000
 - `demo/python/data_operations.py` — Slide 7-9: all core data types (strings, hashes, lists, sets, sorted sets, atomic INCR/DECR counters), pipelining, manual invalidation (explicit `DEL`), time-based invalidation (`SETEX`/TTL - waits for a real expiry to happen, not just printing the configured value), cache-aside, and key iteration (`SCAN` vs `KEYS`, with a comment on why `KEYS` is unsafe in production despite matching here on a tiny local dataset)
 
-Verified by running the actual script against a local `redis-server` before shipping,
-which confirmed every command's individual correctness - but a single-node local
-instance has no slot sharding, so it structurally can't catch Redis Cluster
-cross-slot errors. Two surfaced on real Azure Managed Redis testing and are now
-fixed: `r.pipeline()` defaults to a `MULTI`/`EXEC` transaction, which requires
-every key touched to share a slot (fixed with `transaction=False` - a
-non-transactional pipeline just batches independent commands, no shared-slot
+Verified against a real 3-node Redis Cluster (`redis-server --cluster-enabled yes`,
+formed with `redis-cli --cluster create`), not just a single local instance - a
+single node has no slot sharding and structurally can't catch Redis Cluster
+cross-slot errors, which is exactly the category of bug that slipped through
+initial single-node testing and surfaced on real Azure Managed Redis instead. Two
+were fixed as a result: `r.pipeline()` defaults to a `MULTI`/`EXEC` transaction,
+which requires every key touched to share a slot (fixed with `transaction=False` -
+a non-transactional pipeline just batches independent commands, no shared-slot
 requirement); and the multi-key forms of `DEL`/`MSET` are genuine server-side
 atomic operations with the same same-slot requirement and no equivalent
-workaround, so those became one call per key instead.
+workaround, so those became one call per key instead. Re-testing against the real
+cluster also surfaced a second, more subtle issue: `KEYS` only returns matches
+from whichever single shard it happens to hit, silently missing the rest -
+confirmed finding 1 of 4 keys where `scan_iter()` correctly found all 4 - so the
+demo's `KEYS` vs `SCAN` comparison now reports actual counts from whatever
+environment it's run against instead of asserting they'll match.
 
 ## Run it
 

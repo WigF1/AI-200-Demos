@@ -170,10 +170,26 @@ def demo_key_iteration():
     for key in scanned:
         print(f"  {key}")
 
-    print("Keys found via KEYS (session:*) - same result here, but blocking at scale:")
-    print(" ", sorted(r.keys("session:*")))
+    # scan_iter() correctly aggregates across every shard behind a
+    # cluster-aware client. KEYS does not: confirmed against a real
+    # 3-node Redis Cluster that it only returns matches from whichever
+    # single node/shard it happens to hit, silently missing everything
+    # else - a stronger reason to avoid it in production than blocking
+    # alone. On a non-clustered instance the two happen to agree, which
+    # is exactly the kind of gap that's easy to miss testing locally and
+    # then hit for real against Azure Managed Redis (which is sharded
+    # underneath even when it presents a single transparent endpoint).
+    keys_result = sorted(r.keys("session:*"))
+    print(f"Keys found via KEYS (session:*): {keys_result}")
+    if len(keys_result) < len(scanned):
+        print(
+            f"  KEYS only found {len(keys_result)}/{len(scanned)} keys - on a clustered "
+            "deployment it only sees one shard, not the whole keyspace. This is why "
+            "scan_iter() (which IS cluster-aware) is the correct replacement, not just a "
+            "safer one."
+        )
 
-    print(f"Total matching keys: {len(scanned)}")
+    print(f"Total matching keys (ground truth, via SCAN): {len(scanned)}")
 
 
 if __name__ == "__main__":
