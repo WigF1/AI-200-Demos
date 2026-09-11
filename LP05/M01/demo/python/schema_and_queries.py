@@ -50,7 +50,13 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
 def setup_schema():
     with pool.connection() as conn:
-        conn.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto;")  # for gen_random_uuid()
+        # No CREATE EXTENSION needed for gen_random_uuid() - it's been a
+        # built-in core PostgreSQL function since v13 (confirmed directly
+        # by a core PostgreSQL developer on the pgsql-docs mailing list:
+        # "pgcrypto's version is now just a deprecated wrapper for that").
+        # It previously required the pgcrypto extension, which also isn't
+        # allow-listed by default on Azure Database for PostgreSQL and
+        # would fail with FeatureNotSupported if you tried to enable it.
         conn.execute(DDL)
     print("Schema ready")
 
