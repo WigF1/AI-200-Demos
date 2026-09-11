@@ -19,11 +19,17 @@ else
   # --public-network-access is required as of API version 2025-07-01
   # (confirmed the hard way - see LP06/M01/01-create-redis-cache.sh for
   # the full explanation of the exact error this avoids).
+  # --clustering-policy EnterpriseCluster - default is OSSCluster, which
+  # requires a cluster-aware client and produces MovedError against the
+  # plain redis.Redis() these demos use. See
+  # LP06/M01/01-create-redis-cache.sh for the full explanation. Immutable
+  # after creation.
   time_step "Azure Managed Redis create" \
     az redisenterprise create \
     --name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --sku Balanced_B1 \
     --public-network-access Enabled \
+    --clustering-policy EnterpriseCluster \
     --output table
 fi
 

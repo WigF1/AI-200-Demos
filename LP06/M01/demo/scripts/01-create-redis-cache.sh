@@ -37,11 +37,22 @@ else
   # since the Python demos connect over the public hostname, not a
   # private endpoint - for anything beyond a training exercise, Disabled
   # plus a private endpoint is the more secure choice.
+  # --clustering-policy EnterpriseCluster - confirmed the hard way that
+  # the default is OSSCluster (also confirmed against the official az
+  # redisenterprise CLI reference: "Clustering policy - default is
+  # OSSCluster"), which requires a cluster-aware client
+  # (redis.cluster.RedisCluster) and produces MovedError against a plain
+  # redis.Redis() client - exactly what these demos (and the deck's own
+  # "Use redis.Redis for Enterprise clustering" guidance) assume.
+  # Immutable after creation - if you've already created a cluster
+  # without this, delete it (99-cleanup.sh) and recreate rather than
+  # trying to update it in place.
   time_step "Azure Managed Redis create" \
     az redisenterprise create \
     --name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --sku Balanced_B1 \
     --public-network-access Enabled \
+    --clustering-policy EnterpriseCluster \
     --output table
 fi
 
