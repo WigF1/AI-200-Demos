@@ -13,10 +13,13 @@
 
 - `demo/scripts/01-create-postgres-server` (bash/ps1) — Slide 6-7: Burstable tier, firewall rule, Entra admin
 - `demo/python/schema_and_queries.py` — Slide 8-10: JSONB schema, upsert with `ON CONFLICT`, keyset pagination, `ConnectionPool`
+- `demo/python/json_vs_jsonb_and_operators.py` — inserts/queries 2,000 identical rows into a `json`-typed table and a `jsonb`-typed table and times both, then walks through every commonly used jsonb operator with a runnable example: extraction (`->` `->>` `#>` `#>>`, which also work on plain `json`), containment/existence (`@>` `<@` `?` `?|` `?&`), JSON path (`@?` `@@`), and modification/concatenation (`||` `-`) - all jsonb-only. Verified end-to-end against a real local PostgreSQL 16 instance before shipping, not just documentation.
 
 ## Run it
 
 ```bash
 cd demo/scripts && ./01-create-postgres-server.sh   # or .ps1
-cd ../python && pip install "psycopg[binary,pool]" && python schema_and_queries.py
+cd ../python && pip install "psycopg[binary,pool]"
+python schema_and_queries.py
+python json_vs_jsonb_and_operators.py
 ```
