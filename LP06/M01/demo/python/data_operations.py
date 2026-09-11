@@ -69,7 +69,15 @@ def demo_sorted_sets():
 def demo_numeric_counters():
     # Slide 8: atomic INCR/DECR for counters and rate limiting - no
     # read-modify-write race condition, unlike GET/SET yourself.
-    r.delete("api:calls:user1001", "rate_limit:user1001")
+    #
+    # Two separate DEL calls, not one DEL with both keys: unlike client-
+    # side pipelining, DEL's multi-key form is a genuine server-side
+    # atomic operation, and Redis Cluster requires every key in one such
+    # command to hash to the same slot - confirmed the hard way that
+    # these two don't. No transaction=False equivalent exists for this;
+    # calling it once per key is the correct fix, not a workaround.
+    r.delete("api:calls:user1001")
+    r.delete("rate_limit:user1001")
     for _ in range(3):
         r.incr("api:calls:user1001")
     print("Total API calls (INCR x3) ->", r.get("api:calls:user1001"))
@@ -82,8 +90,18 @@ def demo_numeric_counters():
 def demo_pipelining():
     # Slide 7: batch multiple reads into one round-trip instead of one
     # round-trip per command.
+    #
+    # transaction=False matters here: a transactional pipeline (the
+    # default) wraps commands in MULTI/EXEC, which requires every key
+    # touched to hash to the same cluster slot - confirmed the hard way
+    # that user:1001 and user:1002 land on different slots, raising
+    # ClusterCrossSlotError. A non-transactional pipeline just batches
+    # independent commands for one network round-trip without an
+    # atomicity guarantee across them, so each command is free to go to
+    # whichever slot it needs - the right choice here since these two
+    # HGETALLs were never meant to be atomic with each other, just fast.
     r.hset("user:1002", mapping={"name": "Bob"})
-    pipe = r.pipeline()
+    pipe = r.pipeline(transaction=False)
     pipe.hgetall("user:1001")
     pipe.hgetall("user:1002")
     results = pipe.execute()
@@ -140,7 +158,12 @@ def demo_key_iteration():
     # freezes every other client until it finishes. Never use it in
     # production; scan_iter() (which wraps SCAN in a loop for you) is
     # the direct replacement.
-    r.mset({"session:aaa": "1", "session:bbb": "1", "session:ccc": "1"})
+    # Three separate SET calls, not one MSET: same reasoning as the
+    # multi-key DEL fix in demo_numeric_counters() above - MSET's
+    # atomicity across keys is a genuine server-side guarantee, and
+    # Redis Cluster requires every key in it to share a slot.
+    for key in ("session:aaa", "session:bbb", "session:ccc"):
+        r.set(key, "1")
 
     print("Keys found via SCAN (session:*):")
     scanned = sorted(r.scan_iter(match="session:*"))

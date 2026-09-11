@@ -28,8 +28,15 @@ access-policy-assignment create`).
 ## Testing notes
 
 M01 (data types, invalidation, key iteration) and M02 (streams with
-multiple consumer groups, pub/sub) were fully verified by running the
-actual scripts against a local `redis-server` before shipping. M03
+multiple consumer groups, pub/sub) were verified by running the actual
+scripts against a local `redis-server` before shipping - but a
+single-node local instance has no slot sharding, so it structurally
+can't catch Redis Cluster cross-slot errors. Two surfaced on real Azure
+Managed Redis testing after initial local verification passed and are
+now fixed (see LP06/M01/README.md for the details): a transactional
+pipeline requiring shared slots across its keys, and two multi-key
+commands (`DEL`, `MSET`) hitting the same requirement with no
+pipeline-style workaround available. M03
 (vector storage via RediSearch) could only be partially verified this
 way - the RediSearch module available for local testing (via apt) is an
 old version that predates vector field support entirely, so its schema
