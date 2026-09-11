@@ -25,6 +25,13 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     Write-Host "PostgreSQL server not found - creating (this takes several minutes)..."
     $PgAdminPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
+    # Cache the password BEFORE attempting creation, not after - if the
+    # create command fails for any reason (including a purely cosmetic
+    # failure like az's own table-output renderer not supporting this
+    # response shape, confirmed to happen in practice), the password
+    # must not be lost even though the server itself may already have
+    # been created successfully.
+    Set-Content -Path $PgPasswordFile -Value $PgAdminPassword -NoNewline
     Invoke-TimedStep "PostgreSQL flexible server create" {
         az postgres flexible-server create `
           --resource-group $ResourceGroup --name $PgServer `
@@ -33,9 +40,8 @@ if ($LASTEXITCODE -eq 0) {
           --storage-size 32 --version 16 `
           --admin-user $PgAdminUser --admin-password $PgAdminPassword `
           --public-access 0.0.0.0-255.255.255.255 `
-          --output table
+          --output none
     }
-    Set-Content -Path $PgPasswordFile -Value $PgAdminPassword -NoNewline
 }
 
 az postgres flexible-server db show --resource-group $ResourceGroup --server-name $PgServer `
@@ -45,7 +51,7 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     az postgres flexible-server db create `
       --resource-group $ResourceGroup --server-name $PgServer --database-name $DbName `
-      --output table
+      --output none
 }
 
 Write-Host "Prerequisites ready."

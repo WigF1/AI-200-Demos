@@ -26,6 +26,13 @@ if az postgres flexible-server show --resource-group "$RESOURCE_GROUP" --name "$
   fi
 else
   PG_ADMIN_PASSWORD=$(openssl rand -base64 18)
+  # Cache the password BEFORE attempting creation, not after - if the
+  # create command fails for any reason (including a purely cosmetic
+  # failure like az's own table-output renderer not supporting this
+  # response shape, confirmed to happen in practice under set -e), the
+  # password must not be lost even though the server itself may already
+  # have been created successfully.
+  echo "$PG_ADMIN_PASSWORD" > "$PG_PASSWORD_FILE"
   time_step "PostgreSQL flexible server create" \
     az postgres flexible-server create \
     --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER" \
@@ -34,8 +41,7 @@ else
     --storage-size 32 --version 16 \
     --admin-user "$PG_ADMIN_USER" --admin-password "$PG_ADMIN_PASSWORD" \
     --public-access 0.0.0.0-255.255.255.255 \
-    --output table
-  echo "$PG_ADMIN_PASSWORD" > "$PG_PASSWORD_FILE"
+    --output none
 fi
 
 if az postgres flexible-server db show --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" \
@@ -44,7 +50,7 @@ if az postgres flexible-server db show --resource-group "$RESOURCE_GROUP" --serv
 else
   az postgres flexible-server db create \
     --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER" --database-name "$DB_NAME" \
-    --output table
+    --output none
 fi
 
 echo "== Enable Microsoft Entra authentication alongside native auth (Slide 7) =="
