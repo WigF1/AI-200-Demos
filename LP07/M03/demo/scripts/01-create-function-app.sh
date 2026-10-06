@@ -41,6 +41,38 @@ else
 fi
 
 echo "== Managed identity for identity-based Service Bus / Key Vault connections (Slide 35) =="
-az functionapp identity assign --resource-group "$RESOURCE_GROUP" --name "$FUNCTION_APP" --output table
+PRINCIPAL_ID=$(az functionapp identity assign --resource-group "$RESOURCE_GROUP" --name "$FUNCTION_APP" \
+  --query principalId --output tsv)
+echo "System-assigned identity: $PRINCIPAL_ID"
+
+echo "== Service Bus trigger wiring: queue, RBAC, app setting (Slide 33, 35) =="
+# function_app.py's trigger uses connection="ServiceBusConnection" with no
+# secret - the host resolves ServiceBusConnection__fullyQualifiedNamespace
+# and authenticates as the app's managed identity. That needs all three of
+# these; without them the app deploys fine but the trigger never fires.
+if ! az servicebus namespace show --resource-group "$RESOURCE_GROUP" --name "$SB_NAMESPACE" --output none 2>/dev/null; then
+  echo "Service Bus namespace '$SB_NAMESPACE' not found - run LP07/M01/demo/scripts/01-create-servicebus.sh first." >&2
+  exit 1
+fi
+if az servicebus queue show --resource-group "$RESOURCE_GROUP" --namespace-name "$SB_NAMESPACE" --name "$JOBS_QUEUE" --output none 2>/dev/null; then
+  echo "Queue '$JOBS_QUEUE' already exists."
+else
+  az servicebus queue create --resource-group "$RESOURCE_GROUP" --namespace-name "$SB_NAMESPACE" \
+    --name "$JOBS_QUEUE" --output none
+  echo "Created queue '$JOBS_QUEUE'."
+fi
+SB_ID=$(az servicebus namespace show --resource-group "$RESOURCE_GROUP" --name "$SB_NAMESPACE" --query id --output tsv)
+if [ -n "$(az role assignment list --assignee "$PRINCIPAL_ID" --scope "$SB_ID" --role "Azure Service Bus Data Receiver" --query "[].id" --output tsv)" ]; then
+  echo "Function app identity already has Azure Service Bus Data Receiver."
+else
+  # --assignee-principal-type avoids a Graph lookup that can fail for a
+  # just-created identity that hasn't replicated yet.
+  az role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
+    --role "Azure Service Bus Data Receiver" --scope "$SB_ID" --output none
+  echo "Granted Azure Service Bus Data Receiver to the function app identity."
+fi
+az functionapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$FUNCTION_APP" \
+  --settings "ServiceBusConnection__fullyQualifiedNamespace=${SB_NAMESPACE}.servicebus.windows.net" --output none
+echo "Set ServiceBusConnection__fullyQualifiedNamespace=${SB_NAMESPACE}.servicebus.windows.net"
 
 echo "Function app: https://${FUNCTION_APP}.azurewebsites.net"

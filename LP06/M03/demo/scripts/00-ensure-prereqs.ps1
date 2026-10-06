@@ -14,6 +14,16 @@ az extension add --name redisenterprise --upgrade --only-show-errors
 az redisenterprise show --name $RedisName --resource-group $ResourceGroup --output none 2>$null
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Azure Managed Redis cluster '$RedisName' already exists."
+    # Clusters created before RediSearch was added to the create scripts
+    # don't have it, and it can't be added in place - fail fast with the
+    # fix rather than letting vector_storage.py die on FT.CREATE.
+    $modules = az redisenterprise database show --cluster-name $RedisName --resource-group $ResourceGroup `
+      --query "modules[].name" --output tsv
+    if (-not ($modules -contains "RediSearch")) {
+        Write-Error ("'$RedisName' was created without the RediSearch module (modules can only be " +
+          "added at creation time). Delete it with LP06/M01/demo/scripts/99-cleanup.ps1, then re-run this script to recreate it.")
+        exit 1
+    }
 } else {
     Write-Host "Redis cluster not found - creating (this takes several minutes)..."
     # --public-network-access is required as of API version 2025-07-01
@@ -24,12 +34,21 @@ if ($LASTEXITCODE -eq 0) {
     # plain redis.Redis() these demos use. See
     # LP06/M01/01-create-redis-cache.ps1 for the full explanation.
     # Immutable after creation.
+    # --modules name=RediSearch - required by LP06/M03 (FT.CREATE etc.);
+    # confirmed the hard way that without it every FT.* command fails with
+    # "unknown command 'FT.CREATE'". Modules can ONLY be added at creation
+    # time. RediSearch also requires --eviction-policy NoEviction (default
+    # is VolatileLRU; Azure docs list NoEviction as required for RediSearch).
+    # Both immutable - an existing cluster without them must be deleted
+    # (LP06/M01/demo/scripts/99-cleanup) and recreated.
     Invoke-TimedStep "Azure Managed Redis create" {
         az redisenterprise create `
           --name $RedisName --resource-group $ResourceGroup --location $Location `
           --sku Balanced_B1 `
           --public-network-access Enabled `
           --clustering-policy EnterpriseCluster `
+          --modules name=RediSearch `
+          --eviction-policy NoEviction `
           --output table
     }
 }

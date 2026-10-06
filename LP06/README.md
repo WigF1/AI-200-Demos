@@ -48,3 +48,7 @@ shown in some current-looking documentation - doesn't exist in the
 `redis` package version `pip install redis` actually installs; the real
 module is `index_definition` (confirmed by direct testing against the
 installed package, not just reading docs).
+
+## Note
+
+When running the M03 demo, the thought occurs that more pauses or portal checks might need to be put in place. Especially if someone is unfamiliar with the concepts e.g. flat vs hnsw, what knn means etc.

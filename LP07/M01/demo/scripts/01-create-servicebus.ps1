@@ -53,6 +53,28 @@ foreach ($sub in @("notifications", "audit")) {
     }
 }
 
+Write-Host "== Subscription filter: audit only gets results flagged requires_audit (Slide 7) =="
+# Every subscription starts with a $Default rule (SQL filter 1=1, i.e.
+# "everything"). notifications keeps it; audit swaps it for a SQL filter
+# on the requires_audit application property, so it gets a subset. Create
+# the new rule BEFORE deleting $Default - a subscription with no rules
+# receives nothing. Re-runnable: both steps are skipped once done.
+$AuditRules = az servicebus topic subscription rule list --resource-group $ResourceGroup `
+  --namespace-name $SbNamespace --topic-name $TopicName --subscription-name audit `
+  --query "[].name" --output tsv
+if (-not ($AuditRules -contains "requires-audit")) {
+    az servicebus topic subscription rule create --resource-group $ResourceGroup `
+      --namespace-name $SbNamespace --topic-name $TopicName --subscription-name audit `
+      --name requires-audit --filter-sql-expression "requires_audit = TRUE" --output none
+    Write-Host "Added rule 'requires-audit' to subscription 'audit'."
+}
+if ($AuditRules -contains '$Default') {
+    az servicebus topic subscription rule delete --resource-group $ResourceGroup `
+      --namespace-name $SbNamespace --topic-name $TopicName --subscription-name audit `
+      --name '$Default'
+    Write-Host "Removed the match-all `$Default rule from subscription 'audit'."
+}
+
 Write-Host ""
 Write-Host "== Connection string for the Python scripts =="
 $ConnStr = az servicebus namespace authorization-rule keys list `

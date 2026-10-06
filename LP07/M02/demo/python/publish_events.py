@@ -24,7 +24,7 @@ def publish_inference_completed_event():
         data={
             "requestId": "req-78901",
             "modelName": "content-classifier-v3",
-            "status": "flagged",  # matches the advanced filter created in 01-create-eventgrid-topic
+            "status": "flagged",  # matches the advanced filter created in 02-create-event-subscriptions
             "resultLocation": "https://storage.example.com/results/req-78901.json",
         },
         subject="/pipelines/moderation/batch-42",

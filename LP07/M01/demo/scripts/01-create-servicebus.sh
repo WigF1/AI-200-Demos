@@ -48,6 +48,28 @@ for sub in notifications audit; do
   fi
 done
 
+echo "== Subscription filter: audit only gets results flagged requires_audit (Slide 7) =="
+# Every subscription starts with a \$Default rule (SQL filter 1=1, i.e.
+# "everything"). notifications keeps it; audit swaps it for a SQL filter
+# on the requires_audit application property, so it gets a subset. Create
+# the new rule BEFORE deleting \$Default - a subscription with no rules
+# receives nothing. Re-runnable: both steps are skipped once done.
+AUDIT_RULES=$(az servicebus topic subscription rule list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$SB_NAMESPACE" --topic-name "$TOPIC_NAME" --subscription-name audit \
+  --query "[].name" --output tsv)
+if ! grep -qx "requires-audit" <<<"$AUDIT_RULES"; then
+  az servicebus topic subscription rule create --resource-group "$RESOURCE_GROUP" \
+    --namespace-name "$SB_NAMESPACE" --topic-name "$TOPIC_NAME" --subscription-name audit \
+    --name requires-audit --filter-sql-expression "requires_audit = TRUE" --output none
+  echo "Added rule 'requires-audit' to subscription 'audit'."
+fi
+if grep -qx '\$Default' <<<"$AUDIT_RULES"; then
+  az servicebus topic subscription rule delete --resource-group "$RESOURCE_GROUP" \
+    --namespace-name "$SB_NAMESPACE" --topic-name "$TOPIC_NAME" --subscription-name audit \
+    --name '$Default'
+  echo "Removed the match-all \$Default rule from subscription 'audit'."
+fi
+
 echo
 echo "== Connection string for the Python scripts =="
 CONN_STR=$(az servicebus namespace authorization-rule keys list \

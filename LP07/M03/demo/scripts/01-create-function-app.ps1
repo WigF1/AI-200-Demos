@@ -44,7 +44,42 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Host "== Managed identity for identity-based Service Bus / Key Vault connections (Slide 35) =="
-az functionapp identity assign --resource-group $ResourceGroup --name $FunctionApp --output table
+$PrincipalId = az functionapp identity assign --resource-group $ResourceGroup --name $FunctionApp `
+  --query principalId --output tsv
+Write-Host "System-assigned identity: $PrincipalId"
+
+Write-Host "== Service Bus trigger wiring: queue, RBAC, app setting (Slide 33, 35) =="
+# function_app.py's trigger uses connection="ServiceBusConnection" with no
+# secret - the host resolves ServiceBusConnection__fullyQualifiedNamespace
+# and authenticates as the app's managed identity. That needs all three of
+# these; without them the app deploys fine but the trigger never fires.
+az servicebus namespace show --resource-group $ResourceGroup --name $SbNamespace --output none 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Service Bus namespace '$SbNamespace' not found - run LP07/M01/demo/scripts/01-create-servicebus.ps1 first."
+    exit 1
+}
+az servicebus queue show --resource-group $ResourceGroup --namespace-name $SbNamespace --name $JobsQueue --output none 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Queue '$JobsQueue' already exists."
+} else {
+    az servicebus queue create --resource-group $ResourceGroup --namespace-name $SbNamespace `
+      --name $JobsQueue --output none
+    Write-Host "Created queue '$JobsQueue'."
+}
+$SbId = az servicebus namespace show --resource-group $ResourceGroup --name $SbNamespace --query id --output tsv
+$Existing = az role assignment list --assignee $PrincipalId --scope $SbId --role "Azure Service Bus Data Receiver" --query "[].id" --output tsv
+if ($Existing) {
+    Write-Host "Function app identity already has Azure Service Bus Data Receiver."
+} else {
+    # --assignee-principal-type avoids a Graph lookup that can fail for a
+    # just-created identity that hasn't replicated yet.
+    az role assignment create --assignee-object-id $PrincipalId --assignee-principal-type ServicePrincipal `
+      --role "Azure Service Bus Data Receiver" --scope $SbId --output none
+    Write-Host "Granted Azure Service Bus Data Receiver to the function app identity."
+}
+az functionapp config appsettings set --resource-group $ResourceGroup --name $FunctionApp `
+  --settings "ServiceBusConnection__fullyQualifiedNamespace=$SbNamespace.servicebus.windows.net" --output none
+Write-Host "Set ServiceBusConnection__fullyQualifiedNamespace=$SbNamespace.servicebus.windows.net"
 
 Write-Host "Function app: https://$FunctionApp.azurewebsites.net"
 

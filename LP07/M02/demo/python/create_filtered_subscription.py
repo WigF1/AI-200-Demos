@@ -2,13 +2,17 @@
 LP07 / M02 - Create a filtered event subscription via the Azure mgmt SDK
 (Slide 20, 24: type filtering vs. subject filtering vs. advanced filtering)
 
-This mirrors what 01-create-eventgrid-topic.sh/.ps1 already does with the
-CLI - included here as the SDK-equivalent for the "publish custom events
+This mirrors what 02-create-event-subscriptions.sh/.ps1 already does with
+the CLI - included here as the SDK-equivalent for the "publish custom events
 from AI applications using the Event Grid SDK" learning objective.
 
 Requires:
   pip install azure-mgmt-eventgrid azure-identity
   export AZURE_SUBSCRIPTION_ID=... RESOURCE_GROUP=... EVENTGRID_TOPIC=...
+  export VIEWER_ENDPOINT=https://evgviewer-<suffix>.azurewebsites.net/api/updates
+Both subscriptions deliver to the Event Grid Viewer from
+01-create-eventgrid-topic - have it open (and awake) before running this,
+since Event Grid validates the endpoint during each create.
 """
 import os
 
@@ -25,6 +29,7 @@ from azure.mgmt.eventgrid.models import (
 SUBSCRIPTION_ID = os.environ["AZURE_SUBSCRIPTION_ID"]
 RESOURCE_GROUP = os.environ["RESOURCE_GROUP"]
 TOPIC_NAME = os.environ["EVENTGRID_TOPIC"]
+VIEWER_ENDPOINT = os.environ["VIEWER_ENDPOINT"]
 
 client = EventGridManagementClient(DefaultAzureCredential(), SUBSCRIPTION_ID)
 
@@ -33,7 +38,7 @@ def create_subject_filtered_subscription():
     # Slide 20: subject filtering - prefix/suffix path matching.
     subscription = EventSubscription(
         destination=WebHookEventSubscriptionDestination(
-            endpoint_url="https://example.com/webhook-placeholder"
+            endpoint_url=VIEWER_ENDPOINT
         ),
         filter=EventSubscriptionFilter(
             subject_begins_with="/pipelines/moderation/",
@@ -56,7 +61,7 @@ def create_advanced_filtered_subscription():
     # Slide 24: advanced filtering with StringIn on a data payload field.
     subscription = EventSubscription(
         destination=WebHookEventSubscriptionDestination(
-            endpoint_url="https://example.com/webhook-placeholder"
+            endpoint_url=VIEWER_ENDPOINT
         ),
         filter=EventSubscriptionFilter(
             advanced_filters=[

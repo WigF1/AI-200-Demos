@@ -47,12 +47,21 @@ else
   # Immutable after creation - if you've already created a cluster
   # without this, delete it (99-cleanup.sh) and recreate rather than
   # trying to update it in place.
+  # --modules name=RediSearch - required by LP06/M03 (FT.CREATE etc.);
+  # confirmed the hard way that without it every FT.* command fails with
+  # "unknown command 'FT.CREATE'". Modules can ONLY be added at creation
+  # time. RediSearch also requires --eviction-policy NoEviction (default
+  # is VolatileLRU; Azure docs list NoEviction as required for RediSearch).
+  # Both immutable - an existing cluster without them must be deleted
+  # (LP06/M01/demo/scripts/99-cleanup) and recreated.
   time_step "Azure Managed Redis create" \
     az redisenterprise create \
     --name "$REDIS_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" \
     --sku Balanced_B1 \
     --public-network-access Enabled \
     --clustering-policy EnterpriseCluster \
+    --modules name=RediSearch \
+    --eviction-policy NoEviction \
     --output table
 fi
 

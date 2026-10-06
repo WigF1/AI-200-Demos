@@ -36,7 +36,7 @@ r = redis.Redis(
 )
 
 STREAM = "ai:inference:queue"
-TASK_COUNT = 12  # enough that competing consumers visibly split the work
+TASK_COUNT = 30  # enough that competing consumers visibly split the work
 
 
 def setup_consumer_groups():

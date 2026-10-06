@@ -1,0 +1,57 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    ViewData["Title"] = "Dynamic refresh";
+    var color = Configuration["TestingApp:DefaultSettings:Color"];
+    var font = Configuration["TestingApp:DefaultSettings:Font"];
+    var message = Configuration["TestingApp:DefaultSettings:Message"];
+    var sentinel = Configuration["TestingApp:DefaultSettings:HasChanged"];
+}
+
+<style>
+    .config {
+        background-color: @color;
+        font-family: @font;
+        padding: 2rem;
+        border-radius: .5rem;
+        font-size: 1.5rem;
+    }
+    .festive {
+        background-color: @Configuration["TestingApp:DefaultSettings:FestiveColor"];
+        font-family: @font;
+        padding: 1rem 2rem;
+        border-radius: .5rem;
+        margin-top: 1rem;
+    }
+</style>
+
+<h1 class="display-5">App Configuration dynamic refresh</h1>
+
+<div class="config my-3">
+    <p class="mb-0">@message</p>
+</div>
+
+<feature name="xmas">
+    <div class="festive">
+        <p class="mb-0">This is some festive feature text! (feature flag <code>xmas</code> is on)</p>
+    </div>
+</feature>
+
+<table class="table table-sm mt-4" style="max-width: 48rem">
+    <thead><tr><th>Key</th><th>Value the app currently has</th></tr></thead>
+    <tbody>
+        <tr><td><code>TestingApp:DefaultSettings:Color</code></td><td>@color</td></tr>
+        <tr><td><code>TestingApp:DefaultSettings:Font</code></td><td>@font</td></tr>
+        <tr><td><code>TestingApp:DefaultSettings:Message</code></td><td>@message</td></tr>
+        <tr class="table-warning"><td><code>TestingApp:DefaultSettings:HasChanged</code> (sentinel)</td><td>@sentinel</td></tr>
+    </tbody>
+</table>
+
+
+<p class="text-muted">
+    App started <strong>@AppInfo.StartedAt.ToString("HH:mm:ss")</strong> &middot;
+    page rendered @DateTime.Now.ToString("HH:mm:ss")<br />
+    The sentinel is checked at most every 10 seconds, in the background: after changing it,
+    wait ~10s and reload <em>twice</em>.
+</p>

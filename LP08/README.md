@@ -9,3 +9,12 @@ Source deck: `AI-200T00A-ENU-PowerPoint_08.pptx`
 
 Each module has `demo/scripts` (bash + PowerShell provisioning) and
 `demo/python` (SDK scripts for the actual retrieval/caching/reference work).
+M02 also has `demo/webapp` (ASP.NET Core dynamic refresh demo).
+
+## Cleanup
+
+Both modules share resource group `rg-ai200-lp08-secrets-config`.
+`99-cleanup-all.sh`/`.ps1` deletes it after a typed confirmation. First it
+deletes **and purges** Key Vault `kv-<suffix>`: soft-delete would
+otherwise hold the vault's globally unique name for 90 days, and M01's
+`01-create-keyvault` would fail on the next run.
